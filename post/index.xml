@@ -8,7 +8,7 @@
         <language>zh-cn</language>
         <copyright>KiWiT</copyright>
         <lastBuildDate>Fri, 27 Sep 2024 20:02:00 +0800</lastBuildDate><atom:link href="https://KiWiTChen.github.io/post/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>Java学习小记（一）  数据类型与数组</title>
+        <title>Java学习小记（一） ——数据类型与数组</title>
         <link>https://KiWiTChen.github.io/p/java%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80-%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E4%B8%8E%E6%95%B0%E7%BB%84/</link>
         <pubDate>Fri, 27 Sep 2024 20:02:00 +0800</pubDate>
         
@@ -46,7 +46,7 @@
 &lt;h2 id=&#34;强制类型转换规则&#34;&gt;强制类型转换规则
 &lt;/h2&gt;&lt;ul&gt;
 &lt;li&gt;使用时加上强制类型转换符()&lt;/li&gt;
-&lt;li&gt;细节&lt;img src=&#34;../../../../../../../../administractor Cheng/Desktop/markdown/JAVA.assets/image-20240923195423880.png&#34; alt=&#34;image-20240923195423880&#34; style=&#34;zoom:50%;&#34; /&gt;&lt;/li&gt;
+&lt;li&gt;细节&lt;img src=&#34;index.assets/image-20240923195423880.png&#34; alt=&#34;image-20240923195423880&#34; style=&#34;zoom:50%;&#34; /&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;基本数据类型和string类型的转换&#34;&gt;基本数据类型和String类型的转换
 &lt;/h2&gt;&lt;ul&gt;
@@ -110,7 +110,7 @@
 &lt;p&gt;&lt;strong&gt;引用传递&lt;/strong&gt;：对于&lt;strong&gt;引用类型&lt;/strong&gt;（包括数组，对象等），Java使用引用传递。传递的是对象的引用（即对象在内存中的地址），而不是对象本身。这意味着在方法内部对对象的修改会影响到原对象。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;两者区别：&lt;img src=&#34;../../../../../../../../administractor Cheng/Desktop/markdown/JAVA.assets/image-20240924105752902.png&#34; alt=&#34;image-20240924105752902&#34; style=&#34;zoom:50%;&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;两者区别：&lt;img src=&#34;index.assets/image-20240924105752902.png&#34; alt=&#34;image-20240924105752902&#34; style=&#34;zoom:50%;&#34; /&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;引用重新赋值:虽然传递的是对象的引用，但如果在方法内部将这个引用重新指向另一个对象，那么这种更改不会影响原始引用&lt;/p&gt;
