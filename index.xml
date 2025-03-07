@@ -7,7 +7,718 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>KiWiT</copyright>
-        <lastBuildDate>Tue, 22 Oct 2024 22:32:37 +0800</lastBuildDate><atom:link href="https://KiWiTChen.github.io/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Fri, 07 Mar 2025 17:52:26 +0800</lastBuildDate><atom:link href="https://KiWiTChen.github.io/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>RTOS学习小记（一）——Keil重构μCOS_II</title>
+        <link>https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/</link>
+        <pubDate>Fri, 07 Mar 2025 17:52:26 +0800</pubDate>
+        
+        <guid>https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/</guid>
+        <description>&lt;h1 id=&#34;任务目标&#34;&gt;任务目标
+&lt;/h1&gt;&lt;p&gt;嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。&lt;/p&gt;
+&lt;p&gt;这里我们以μC/OS_II为例，通过ARMKeil重构μC/OS_II代码，为后续的完整移植做铺垫；&lt;/p&gt;
+&lt;p&gt;了解操作系统的基本原理，了解任务创建，栈的生成，就绪队列，中断，信号量等基本概念。&lt;/p&gt;
+&lt;h1 id=&#34;系统结构&#34;&gt;系统结构
+&lt;/h1&gt;&lt;h2 id=&#34;内核架构&#34;&gt;内核架构
+&lt;/h2&gt;&lt;img src=&#34;index.assets/image-20250305214253861.png&#34; alt=&#34;image-20250305214253861&#34; style=&#34;zoom: 80%;&#34; /&gt;
+&lt;p&gt;上图是μC/OS_II的内核架构，据此我们可以参考官方源码确定重构文件结构大致如下：&lt;/p&gt;
+&lt;p&gt;​																Project&amp;ndash;|Core&amp;ndash;|os_core.c&lt;/p&gt;
+&lt;p&gt;​																							|os_task.c&amp;hellip;&lt;/p&gt;
+&lt;p&gt;​		 	  																|Cfg   &amp;ndash;|os_cfg.h&lt;/p&gt;
+&lt;p&gt;​																						     |app_cfg.h&lt;/p&gt;
+&lt;p&gt;​		       																|Port &amp;ndash;|os_cpu.h&lt;/p&gt;
+&lt;p&gt;​																						    |os_cpu_c.h&lt;/p&gt;
+&lt;p&gt;​																							|os_cpu_a.s&lt;/p&gt;
+&lt;p&gt;​		     																  |Prj       //Keil相关编译文件&lt;/p&gt;
+&lt;p&gt;​		      																 |User   //用户自定义函数以及main&lt;/p&gt;
+&lt;h2 id=&#34;模块介绍&#34;&gt;模块介绍
+&lt;/h2&gt;&lt;h3 id=&#34;core层核心一般不做修改&#34;&gt;Core层（核心，一般不做修改）
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;os_core.c：负责操作系统内核的初始化和核⼼功能的实现，包括任务调度器的初始化和空闲任务的创建。&lt;/li&gt;
+&lt;li&gt;os_task.c：包含任务管理相关的函数，如任务的创建、删除和任务控制块（TCB）的操作。&lt;/li&gt;
+&lt;li&gt;os_flag.c：实现事件标志组功能，⽤于任务间的同步和通信。&lt;/li&gt;
+&lt;li&gt;os_mem.c：提供内存管理功能，包括内存块的分配和释放。&lt;/li&gt;
+&lt;li&gt;os_tmr.c：实现软件定时器功能，允许在指定时间后执⾏特定操作。&lt;/li&gt;
+&lt;li&gt;os_mutex.c：提供互斥信号量功能，⽤于保护共享资源，防⽌同时访问导致的数据不⼀致。&lt;/li&gt;
+&lt;li&gt;os_sem.c：uC/OS II中的信号量（Semaphore）功能在任务间的同步和互斥上起着重要作⽤。这个⽂件实现了信号量的接⼝函数&lt;/li&gt;
+&lt;li&gt;os_mbox.c: 邮箱（Mailbox）是uC/OS II⽤于任务间消息传递的机制之⼀。这个⽂件实现了邮箱功能的接⼝函数。&lt;/li&gt;
+&lt;li&gt;os_q.c：队列（Queue）也是任务间通信常⽤的⽅式之⼀，这个⽂件实现了队列的接⼝函数。&lt;/li&gt;
+&lt;li&gt;ucos_ii.c：这个源⽂件包含了uC/OS II内核的核⼼功能实现，如操作系统初始化、任务调度算法、时钟节拍处理、中断管理、任务创建与删除、事件标志组、信号量、互斥量、邮箱和队列等操作的代码。它是uC/OS II操作系统运⾏的基础，实现了多任务环境下的同步与通信机制。&lt;/li&gt;
+&lt;li&gt;ucos_ii.h：这个头⽂件包含了uC/OS II内核中使⽤的各种数据结构的定义，如任务、事件、链表、信号量等，以及函数声明。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;port层移植层与硬件平台相关&#34;&gt;Port层（移植层，与硬件平台相关）
+&lt;/h3&gt;&lt;p&gt;&lt;em&gt;⭐ Ports ⽂件夹中的⽂件包含了针对不同处理器平台的移植代码。每个处理器平台都有不同的硬件架构和操作系统接⼝，因此需要根据处理器的特点进⾏移植，以确保 uC/OS II 内核可以在特定处理器上正确地运⾏。&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;STM32F401RET6是ARMV7架构的芯片，所以我们在官方的文件中能看到大致有这么几个文件：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;os_cpu.h：定义与处理器架构相关的数据类型和宏，确保操作系统能够在特定的 CPU 上运⾏。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;os_cpu_a.asm：包含与处理器架构相关的汇编代码，如上下⽂切换和中断处理等底层操作。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;os_cpu_c.c：实现与处理器架构相关的 C 语⾔函数，如任务上下⽂初始化等。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;cfg层配置文件决定任务堆栈功能&#34;&gt;Cfg层（配置文件，决定任务、堆栈、功能）
+&lt;/h3&gt;&lt;ul&gt;
+&lt;li&gt;os_cfg.h：⽤于配置操作系统的功能和特性，如任务数量、堆栈⼤⼩、是否启⽤某些功能等。&lt;/li&gt;
+&lt;li&gt;app cfg.h：包含应⽤程序所需的头⽂件，确保编译器能够找到所有必要的声明和定义。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;项目创建&#34;&gt;项目创建
+&lt;/h1&gt;&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;新建⼀个总工程⽂件夹，并在⽂件夹下⾯再新增⽂件夹Port、Cfg、Core、Prj，在Core⽂件夹中导⼊官⽹所给的⽂件。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;打开keil5，把它们导入到项目中。选择project-&amp;gt;new uversionproject,项目文件放至Prj文件夹中，然后选好芯片型号：STM32F401RETx&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305225617073.png&#34;
+	width=&#34;579&#34;
+	height=&#34;432&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305225617073_hu_75ee3e81f15a4e26.png 480w, https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305225617073_hu_86a6131bdf6cd6a5.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;134&#34;
+		data-flex-basis=&#34;321px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;右键单击target1-addgroup新建文件夹，并重命名为Core、Port和Cfg，右键单击文件夹，addexistingfilestogroup‘xxx’添加文件。&lt;img src=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230505443.png&#34;
+	width=&#34;944&#34;
+	height=&#34;422&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230505443_hu_f92945167235251f.png 480w, https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230505443_hu_7c394f54adb519ae.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;223&#34;
+		data-flex-basis=&#34;536px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;添加头文件路径。打开魔术棒，在C/C++和Asm里的IncludePath中写入C程序和汇编文件的路径。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230540754.png&#34;
+	width=&#34;647&#34;
+	height=&#34;461&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230540754_hu_92d59d223c969723.png 480w, https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230540754_hu_e6e6333881438ad5.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image-20250305230540754&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;140&#34;
+		data-flex-basis=&#34;336px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;h1 id=&#34;报错解决&#34;&gt;报错解决
+&lt;/h1&gt;&lt;h3 id=&#34;错误类型1缺少件或找不到件&#34;&gt;错误类型1：缺少⽂件或找不到⽂件
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方式：创建对应文件，暂时“骗”过编译器&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Core&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ucos_ii&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;h&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;45&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;error&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;err&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;5&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;cannot&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;open&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;source&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;input&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#34;app_cfg.h&amp;#34;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;No&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;such&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;or&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;directory&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这个报错信息提⽰我们缺少app_cfg.h⽂件，于是我们先建⽴⼀个空的app_cfg.h⽂件在Cfg⽂件夹中。&lt;/p&gt;
+&lt;p&gt;同理添加os_cfg.h、os_cpu.h&lt;/p&gt;
+&lt;h3 id=&#34;错误类型2缺少相应的数据类型的定义和函数的声明&#34;&gt;错误类型2：缺少相应的数据类型的定义和函数的声明。
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方式：在os_cpu.h⽂件中添加相应的定义&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Core&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ucos_ii&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;h&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;372&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;error&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;err&#34;&gt;#&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;20&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;identifier&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#34;INT8U&amp;#34;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;is&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;undefined&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;blockquote&gt;
+&lt;p&gt;为什么需要定义不同的变量类型INT8U,INT16U等？&lt;/p&gt;
+&lt;p&gt;由于signed int，unsigned int等原⽣类型时，其实际位数取决于处理器。⽐如在16位系统中int通常为16位，⽽在32/64位系统中，int通常为32位。这会导致移植时不同平台时产⽣数据溢出等情况。&lt;/p&gt;
+&lt;p&gt;自定义数据类型，通过typedef明确定义数据类型的位数，保证了跨平台的⼀致性。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;p&gt;下表是对于μC/OS_II中数据类型的定义参考：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305232437124.png&#34;
+	width=&#34;657&#34;
+	height=&#34;368&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305232437124_hu_ef1a4e0edd1ffda2.png 480w, https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305232437124_hu_9f6306e8ae6bd07d.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image-20250305232437124&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;178&#34;
+		data-flex-basis=&#34;428px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;所以选择在os_cpu.h文件中定义相关数据类型：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;//数据类型
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;BOOLEAN&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 定义布尔类型
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INT8U&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// ⽆符号8位整数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;signed&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INT8S&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 有符号8位整数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;short&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INT16U&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// ⽆符号16位整数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;signed&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;short&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INT16S&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 有符号16位整数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INT32U&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// ⽆符号32位整数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;signed&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INT32S&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 有符号32位整数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;FP32&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 单精度浮点数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;double&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;FP64&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 双精度浮点数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;OS_STK&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;// 每个栈条⽬为32位宽
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;typedef&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;OS_CPU_SR&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;// 定义CPU状态寄存器的⼤⼩（PSR = 32位）
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;错误类型3os_cfgh中缺少相应功能定义&#34;&gt;错误类型3：os_cfg.h中缺少相应功能定义。
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方式：参考官方源码中cfg文件，在os_cfg.h⽂件中添加相应的宏定义&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;.\ucos\ucos_ii.h(1482) : error : #35 : #error directive:&amp;#34;OS_CFG.H,MissingOS_FLAG_EN: Enable(1) or Disable (0) code generation for Event Flags
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;我们在os_cfg.h文件中暂时对相应参数配置如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;  1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;  9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 19
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 20
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 21
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 22
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 23
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 24
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 25
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 26
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 27
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 28
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 29
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 30
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 31
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 32
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 33
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 34
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 35
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 36
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 37
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 38
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 39
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 40
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 41
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 42
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 43
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 44
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 45
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 46
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 47
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 48
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 49
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 50
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 51
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 52
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 53
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 54
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 55
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 56
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 57
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 58
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 59
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 60
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 61
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 62
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 63
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 64
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 65
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 66
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 67
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 68
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 69
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 70
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 71
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 72
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 73
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 74
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 75
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 76
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 77
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 78
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 79
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 80
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 81
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 82
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 83
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 84
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 85
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 86
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 87
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 88
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 89
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 90
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 91
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 92
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 93
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 94
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 95
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 96
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 97
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 98
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 99
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;100
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;101
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;102
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;103
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;104
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;105
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;106
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;107
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;108
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;109
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;110
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;111
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;112
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;113
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;114
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;115
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;116
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* ---------------------- MISCELLANEOUS ----------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_APP_HOOKS_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Application-defined hooks arecalled from the uC/OS-II hooks */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_ARG_CHK_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) argumentchecking */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_CPU_HOOKS_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* uC/OS-II hooks are found in theprocessor port files */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_DEBUG_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable(1) debug variables*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_EVENT_MULTI_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSEventPendMulti()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_EVENT_NAME_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable names for Sem, Mutex, Mboxand Q */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_LOWEST_PRIO 63u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Defines the lowest priority thatcan be assigned ... */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;								&lt;span class=&#34;cm&#34;&gt;/* ... MUST NEVER be higher than 254!*/&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MAX_EVENTS 10u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Max. number of event control blocksin your application */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MAX_FLAGS 5u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Max. number of Event Flag Groupsin your application */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MAX_MEM_PART 5u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Max. number of memory partitions*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MAX_QS 4u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Max. number of queue control blocksin your application */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MAX_TASKS 20u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Max. number of tasks in yourapplication, MUST be &amp;gt;= 2 */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SCHED_LOCK_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSSchedLock() andOSSchedUnlock() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TICK_STEP_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable tick stepping feature foruC/OS-View */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TICKS_PER_SEC 100u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Set the number of ticks in onesecond */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TLS_TBL_SIZE 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Size of Thread-Local Storage Table*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* --------------------- TASK STACK SIZE ---------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_TMR_STK_SIZE 128u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Timer task stack size (# ofOS_STK wide entries) */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_STAT_STK_SIZE 128u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Statistics task stack size (# ofOS_STK wide entries) */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_IDLE_STK_SIZE 128u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Idle task stack size (# ofOS_STK wide entries) */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* --------------------- TASK MANAGEMENT ---------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_CHANGE_PRIO_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSTaskChangePrio() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_CREATE_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSTaskCreate()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_CREATE_EXT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSTaskCreateExt() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_DEL_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSTaskDel()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_NAME_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable task names*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_PROFILE_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include variables in OS_TCB forprofiling */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSTaskQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_REG_TBL_SIZE 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Size of task variables array(#of INT32U entries) */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_STAT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable(0) thestatistics task */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_STAT_STK_CHK_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Check task stacks fromstatistic task */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_SUSPEND_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSTaskSuspend() and OSTaskResume() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TASK_SW_HOOK_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSTaskSwHook()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* ----------------------- EVENT FLAGS ------------------------ */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAG_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for EVENT FLAGS */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAG_ACCEPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSFlagAccept()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAG_DEL_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSFlagDel()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAG_NAME_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable names for event flaggroup */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAG_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSFlagQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAG_WAIT_CLR_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for Wait on ClearEVENT FLAGS */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_FLAGS_NBITS 16u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Size in #bits of OS_FLAGS data type(8, 16 or 32) */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* -------------------- MESSAGE MAILBOXES --------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for MAILBOXES */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_ACCEPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMboxAccept()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_DEL_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMboxDel()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_PEND_ABORT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSMboxPendAbort() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_POST_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMboxPost()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_POST_OPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSMboxPostOpt() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MBOX_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMboxQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* --------------------- MEMORY MANAGEMENT -------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MEM_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for MEMORY MANAGER */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MEM_NAME_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable memory partition names*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MEM_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMemQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* ---------------- MUTUAL EXCLUSION SEMAPHORES --------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MUTEX_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for MUTEX */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MUTEX_ACCEPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSMutexAccept() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MUTEX_DEL_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMutexDel()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_MUTEX_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSMutexQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* ---------------------- MESSAGE QUEUES ---------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for QUEUES */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_ACCEPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQAccept()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_DEL_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQDel()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_FLUSH_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQFlush()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_PEND_ABORT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQPendAbort()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_POST_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQPost()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_POST_FRONT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQPostFront()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_POST_OPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQPostOpt()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_Q_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSQQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* ------------------------ SEMAPHORES ------------------------ */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SEM_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for SEMAPHORES */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SEM_ACCEPT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSSemAccept()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SEM_DEL_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSSemDel()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SEM_PEND_ABORT_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSSemPendAbort() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SEM_QUERY_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSSemQuery()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_SEM_SET_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSSemSet()*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* --------------------- TIME MANAGEMENT ---------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TIME_DLY_HMSM_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSTimeDlyHMSM() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TIME_DLY_RESUME_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSTimeDlyResume() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TIME_GET_SET_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code for OSTimeGet()and OSTimeSet() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TIME_TICK_HOOK_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Include code forOSTimeTickHook() */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* --------------------- TIMER MANAGEMENT --------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TMR_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) codegeneration for TIMERS */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TMR_CFG_MAX 16u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Maximum number of timers*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TMR_CFG_NAME_EN 1u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Determine timer names*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TMR_CFG_WHEEL_SIZE 7u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Size of timer wheel (#Spokes)*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TMR_CFG_TICKS_PER_SEC 10u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Rate at which timer managementtask runs (Hz) */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/* ---------------------- TRACE RECORDER ---------------------- */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TRACE_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) uC/OS-IITrace instrumentation */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TRACE_API_ENTER_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) uC/OS-IITrace API enter instrum. */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TRACE_API_EXIT_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) uC/OS-IITrace API exit instrum. */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;blockquote&gt;
+&lt;p&gt;在后续的学习中，可以把相关的功能给禁⽤，注意部分参数的取值范围，若设定的参数不在范围内则会报错。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_TMR_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable (1) or Disable (0) code generation for TIMERS */&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;将 OS_TMR_EN 设置为 0u 会使 uC/OS-II 禁⽤定时器功能的代码⽣成。STM32F401具有多个定时器Timer，可以满⾜定时中断、PWM输出、输⼊捕获、输出⽐较等功能，也可以使⽤Systick（SysTick是 Cortex-M 内核中的⼀个系统定时器，属于内核的⼀部分）&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define OS_DEBUG_EN 0u &lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/* Enable(1) debug variables*/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;OS_DEBUG这个功能在后续的操作中没什么⽤但是会产⽣报错，所以我们也将这个功能给关闭。&lt;/p&gt;
+&lt;h3 id=&#34;错误类型4链接时重复定义&#34;&gt;错误类型4：链接时重复定义
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方法：搜索重复定义的文件，调整include path&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Objects&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;projects&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nl&#34;&gt;axf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;Error&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;L6200E&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Symbol&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;OSEventNameGet&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;multiply&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;defined&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;by&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ucos_ii&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;o&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;and&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;os_core&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;o&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;).&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;上述报错说的是OSEventNameGet在两个文件ucos_ii.o and os_core.o中被重复定义；&lt;/p&gt;
+&lt;p&gt;这两个.o文件都是编译器编译同名.c文件生成的对象（object）文件。&lt;/p&gt;
+&lt;p&gt;这里一般的思路是借助CTRL+F搜索对应变量，定位重复部分，然后调整.h或者.c的“#include &amp;lsquo;xxx&amp;rsquo; &amp;ldquo;部分。&lt;/p&gt;
+&lt;h4 id=&#34;为什么链接阶段报错而不是编译&#34;&gt;为什么链接阶段报错而不是编译？
+&lt;/h4&gt;&lt;p&gt;&lt;strong&gt;——简单理解为预处理粘贴include部分的代码块，编译不报错，但是链接时会发现”重复定义“&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;可以参考《深入理解计算机系统》这本书，或者&lt;a class=&#34;link&#34; href=&#34;https://zhuanlan.zhihu.com/p/476697014&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;这篇博客&lt;/a&gt;，&lt;img src=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211.png&#34;
+	width=&#34;831&#34;
+	height=&#34;129&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211_hu_2d2ad451eaa0bdb2.png 480w, https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211_hu_f9553803bd939f5c.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image-20250307165645211&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;644&#34;
+		data-flex-basis=&#34;1546px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;预处理器主要将项目代码进行处理，删除注释、#include、展开宏定义等；&lt;/li&gt;
+&lt;li&gt;编译器则是我们熟悉的词法分析、语法分析、语义分析等过程得到.s文件；&lt;/li&gt;
+&lt;li&gt;经过汇编器处理后汇编得到.o文件;&lt;/li&gt;
+&lt;li&gt;之后链接器会检查所有⽬标⽂件和库⽂件中的符号定义和引⽤；&lt;/li&gt;
+&lt;li&gt;最终生成可执行程序。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id=&#34;具体解决&#34;&gt;具体解决
+&lt;/h4&gt;&lt;p&gt;在重构项目中，ucos_ii.c文件”粘贴“了多个os_xxx.c文件中的内容，而项目中os_xxx.c也会被编译，最后在链接时发现重定义；&lt;/p&gt;
+&lt;img src=&#34;../../../../../../../../administractor Cheng/Desktop/markdown/四轴II挑战点一ARMKeil重构UC_OSII项目.assets/image-20250307171502174.png&#34; alt=&#34;image-20250307171502174&#34; style=&#34;zoom:50%;&#34; /&gt;
+&lt;p&gt;所以我们只需要右键core，点击魔术棒，关闭此部分的编译包含。&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20250307171905834.png&#34; alt=&#34;image-20250307171905834&#34; style=&#34;zoom:50%;&#34; /&gt;
+&lt;h3 id=&#34;错误类型5缺少启动件导致链接失败&#34;&gt;错误类型5：缺少启动⽂件导致链接失败
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方法：导入对应启动文件.s&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Objects&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ucosii&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nl&#34;&gt;axf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;Error&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;L6320W&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Ignoring&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;--&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;entry&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;command&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Cannot&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;find&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;argument&lt;/span&gt; &lt;span class=&#34;err&#34;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Reset_Handler&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;&amp;#39;&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;//截取了一条
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;缺少了启动文件，程序找不到执行入口以及中断向量表等，所以也会报错，后续我们还会对启动文件进行进一步分析；&lt;/p&gt;
+&lt;p&gt;这里只需要新建一个Startup文件夹，导入startup_stm32f40_41xxx.s。&lt;/p&gt;
+&lt;h3 id=&#34;错误类型6os_cpu_c中hook函数&#34;&gt;错误类型6：os_cpu_.c中hook函数
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方法：暂时空定义函数，后续补充完善&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Objects&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;test&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nl&#34;&gt;axf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;Error&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;L6218E&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Undefined&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;symbol&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSCtxSw&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;referred&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;os_core&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;o&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;).&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id=&#34;什么是hook函数&#34;&gt;什么是Hook函数？
+&lt;/h4&gt;&lt;p&gt;钩子函数是uC/OS-II内核在特定操作（如任务创建、删除、切换等）前后调用的空函数（默认为空实现）。开发者通过重写这些函数，可以在不修改内核源码的情况下扩展功能。常见用途包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;调试与监控&lt;/strong&gt;：记录任务创建/删除时间、堆栈使用情况等。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;资源管理&lt;/strong&gt;：在任务创建时初始化自定义数据结构或外设。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;性能分析&lt;/strong&gt;：统计任务执行时间或上下文切换次数。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;安全检查&lt;/strong&gt;：验证任务参数的合法性。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;以&lt;code&gt;OSTaskCreateHook&lt;/code&gt;为例，它在任务创建后被调用，允许开发者在任务首次运行前执行自定义逻辑。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;简单来讲就是获取操作系统的相关状态&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h4 id=&#34;具体解决-1&#34;&gt;具体解决
+&lt;/h4&gt;&lt;p&gt;我们需要新建⼀个os_cpu_c.c⽂件和⼀个os_cpu_a.s⽂件，在其中补充缺少的函数实现，⽬前我们不需要补全具体的函数实现细节，只需要写⼀个空定义来骗过编译器。&lt;/p&gt;
+&lt;p&gt;在os_cpu_c.c⽂件中，我们定义空的系统初始化函数、钩⼦函数、cpu异常栈基地址和这是内核可⽤&lt;/p&gt;
+&lt;p&gt;的优先级边界。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;#34;os_cpu.h&amp;#34;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;// 系统初始化函数，通常⽤于设置硬件相关的设置
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;SystemInit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 定义空的钩⼦函数
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSInitHookBegin&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSInitHookEnd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSTCBInitHook&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSTaskCreateHook&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSTaskIdleHook&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSTaskReturnHook&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OSTaskSwHook&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 任务堆栈初始化函数，为新任务分配堆栈空间
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;OS_STK&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OSTaskStkInit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;task&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;p_arg&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;),&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;p_arg&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;OS_STK&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ptos&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;INT16U&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;opt&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;){&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ptos&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 定义⼀个空的CPU异常栈基地址
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OS_CPU_ExceptStkBase&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 设置内核可⽤的优先级边界
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;OS_KA_BASEPRI_Boundary&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(){}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id=&#34;错误类型7中断恢复与切换实现函数&#34;&gt;错误类型7：中断、恢复与切换实现函数
+&lt;/h4&gt;&lt;p&gt;&lt;strong&gt;解决方法：编写汇编函数确定相关逻辑&lt;/strong&gt;&lt;/p&gt;
+&lt;h4 id=&#34;为什么要使用汇编&#34;&gt;为什么要使用汇编？
+&lt;/h4&gt;&lt;p&gt;在os_cpu_a.s⽂件中，实现的是与处理器相关的函数,这⼀部分的函数涉及CPU 特权寄存器的访问、寄存器状态的保存与恢复，以及任务上下⽂切换。&lt;/p&gt;
+&lt;p&gt;这些操作需要对CPU 体系结构和指令集进⾏精确控制，⽽⾼级语⾔（如 C）⽆法不提供直接读写特定硬件寄存器（如中断寄存器PRIMASK、堆栈PSP、任务控制块TCB）的机制，也难以确保任务切换的精确性和⾼效性。&lt;/p&gt;
+&lt;h4 id=&#34;具体解决-2&#34;&gt;具体解决
+&lt;/h4&gt;&lt;p&gt;创建os_cpu_a.s文件，定义相关函数：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;26
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;27
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;28
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;29
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;30
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;31
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;32
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;33
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;34
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;35
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;36
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;37
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;38
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-asm&#34; data-lang=&#34;asm&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;EXPORT&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;OS_CPU_SR_Save&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;EXPORT&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;OS_CPU_SR_Restore&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;EXPORT&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;OSCtxSw&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;EXPORT&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;OSIntCtxSw&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;EXPORT&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;OSStartHighRdy&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;EXPORT&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;OS_CPU_PendSVHandler&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;AREA&lt;/span&gt; &lt;span class=&#34;err&#34;&gt;|&lt;/span&gt;&lt;span class=&#34;no&#34;&gt;.text&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;|&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;CODE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;READONLY&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;ALIGN&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;THUMB&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;REQUIRE8&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;PRESERVE8&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;; 保存中断状态并关中断
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OS_CPU_SR_Save&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PROC&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MRS&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;R0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PRIMASK&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;; 读取PRIMASK/BASEPRI（中断状态寄存器）并存⼊R0
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;CPSID&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;I&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;; 关闭中断
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;BX&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;LR&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;; 返回
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;ENDP&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;; 恢复中断状态
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OS_CPU_SR_Restore&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PROC&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MSR&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PRIMASK&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;R0&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;; 将R0的值写回PRIMASK/BASEPRI寄存器
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;BX&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;LR&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;ENDP&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;; 任务上下⽂切换，此处为空实现，仅供通过编译。以后需要实现任务上下⽂切换代码。
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OSCtxSw&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PROC&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;BX&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;LR&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;ENDP&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;; 中断级任务切换，空实现
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OSIntCtxSw&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PROC&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;BX&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;LR&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;ENDP&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;; 启动最⾼优先级任务，空实现，实际需要初始化任务堆栈并启动第⼀个任务
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OSStartHighRdy&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PROC&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;BX&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;LR&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;ENDP&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;; PendSV 中断处理，空实现，实际应实现PendSV中断处理以完成任务切换
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;OS_CPU_PendSVHandler&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;PROC&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;BX&lt;/span&gt; &lt;span class=&#34;no&#34;&gt;LR&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;ENDP&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;END&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;错误类型8缺少main函数&#34;&gt;错误类型8：缺少main函数
+&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;解决方法：添加主函数&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;Objects&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;\&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;test&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;nl&#34;&gt;axf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;Error&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nl&#34;&gt;L6218E&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Undefined&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;symbol&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;referred&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;__rtentry2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;o&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;).&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;创建user文件夹，加入main.c文件：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;#34;ucos_ii.h&amp;#34;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;k&#34;&gt;while&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h1 id=&#34;工程验证&#34;&gt;工程验证
+&lt;/h1&gt;&lt;h3 id=&#34;想法1调函数&#34;&gt;想法1：调⽤函数
+&lt;/h3&gt;&lt;p&gt;eg：OSTimeDly(1000 * 2);&lt;/p&gt;
+&lt;p&gt;预期结果：编译通过且不报错，说明⼯程搭建成功。&lt;/p&gt;
+&lt;h3 id=&#34;想法2点亮灯&#34;&gt;想法2：点亮⼩灯
+&lt;/h3&gt;&lt;p&gt;由于任务创建点亮⼩灯需要例如创建tcb，堆栈⼤⼩优先级，队列，延时等知识，在后续的学习中我们才会学到。但我们仍想通过点亮⼩灯来验证⼯程搭建成功。&lt;/p&gt;
+&lt;p&gt;因此我们的思路是：&lt;/p&gt;
+&lt;p&gt;写⼀个led.c，通过上⾯我们提到的钩⼦函数调⽤led.c，再在main.c⾥⾯调⽤钩⼦函数，从⽽达到通过点亮⼩灯验证⼯程搭建是否成功。由于时间关系，我们直接来看我们写好的点灯程序。&lt;/p&gt;
+&lt;p&gt;这⾥我们需要注意的是我们需要注释掉我们⾃⼰在cpu_c.h中写的空的SystemInt（）函数，因为在&lt;/p&gt;
+&lt;p&gt;f401已经含有初始化系统的函数。&lt;/p&gt;
+&lt;p&gt;预期结果：编译通过且不报错，板载⼩灯L2闪烁，说明⼯程搭建成功。&lt;/p&gt;
+&lt;h1 id=&#34;项目总结&#34;&gt;项目总结
+&lt;/h1&gt;&lt;p&gt;通过本项目，掌握了μC/OS-II内核重构的核心流程，解决了跨平台移植中的典型问题，为后续实现完整RTOS功能打下坚实基础。下一步将深入任务调度与硬件驱动集成，构建实时嵌入式应用。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Stm32学习小记（二）——应用AD绘制原理图</title>
         <link>https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/</link>
         <pubDate>Tue, 22 Oct 2024 22:32:37 +0800</pubDate>
@@ -19,7 +730,7 @@
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191102337.png&#34;
 	width=&#34;270&#34;
 	height=&#34;408&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191102337_hu6514410508641048815.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191102337_hu9117217372597840300.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191102337_hu_baf9616a0f7ff80b.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191102337_hu_74c3fe12d97e1d5f.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20240909191102337&#34;
@@ -34,7 +745,7 @@
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191345118.png&#34;
 	width=&#34;660&#34;
 	height=&#34;618&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191345118_hu14201892402953395980.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191345118_hu4875413595450715659.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191345118_hu_21e0dd9af0c117b9.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191345118_hu_36381c4ad9cfc1db.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20240909191345118&#34;
@@ -49,7 +760,7 @@
 &lt;/h1&gt;&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035.png&#34;
 	width=&#34;380&#34;
 	height=&#34;235&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035_hu1273075758284671381.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035_hu11437581266810263379.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035_hu_81a75b07e3ecd3e.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035_hu_fc13f8a982c3aa7d.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20240909193032035&#34;
@@ -77,7 +788,7 @@
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201349066.png&#34;
 	width=&#34;476&#34;
 	height=&#34;442&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201349066_hu2128568413369011365.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201349066_hu4673872376302926568.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201349066_hu_fc404db41e0120f7.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201349066_hu_bf04fa422295cee6.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20240909201349066&#34;
@@ -92,7 +803,7 @@
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201431365.png&#34;
 	width=&#34;384&#34;
 	height=&#34;1080&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201431365_hu9918903523708081414.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201431365_hu11542393032070780430.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201431365_hu_cf7f5badf5655a17.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909201431365_hu_ae5c22e0d8fc028a.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20240909201431365&#34;
@@ -128,7 +839,7 @@
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240920212439354.png&#34;
 	width=&#34;485&#34;
 	height=&#34;707&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240920212439354_hu11254198226381441855.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240920212439354_hu6925617165387456252.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240920212439354_hu_88ba7c9134402d1d.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240920212439354_hu_17ddfc2ce09cdfcd.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20240920212439354&#34;
@@ -408,13 +1119,12 @@
 &lt;/h2&gt;&lt;p&gt;mpu6050是一款多轴传感器融合的运动处理模块，它具有一个嵌入式&lt;strong&gt;3轴MEMS陀螺仪&lt;/strong&gt;，一个&lt;strong&gt;3轴MEMS加速度计&lt;/strong&gt;以及一个&lt;strong&gt;DMP&lt;/strong&gt;硬件加速引擎，通过I2C通信接口，mpu6050模块可将整合的加速度以及角加速度信息发送到终端MCU，供设备使用。这一特性使其广泛运用于手机、平板、游戏控制器、可穿戴式设备等领域。&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;在江科大提供的模块资料中，我们可以找到product specification和register map手册，但是英文版手册难以阅读，这时可以使用翻译网站&lt;a class=&#34;link&#34; href=&#34;https://www.deepl.com/translator&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DeepL翻译：全世界最准确的翻译&lt;/a&gt;进行pdf、word等格式手册的自动翻译，使用效果还是非常不错的。&lt;/p&gt;
-&lt;/blockquote&gt;
+    &gt;DeepL翻译：全世界最准确的翻译&lt;/a&gt;进行pdf、word等格式手册的自动翻译，使用效果还是非常不错的。&lt;/p&gt;&lt;/blockquote&gt;
 &lt;h2 id=&#34;硬件电路及引脚定义&#34;&gt;硬件电路及引脚定义
 &lt;/h2&gt;&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010.png&#34;
 	width=&#34;1026&#34;
 	height=&#34;601&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu4780308858532440570.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu3208935474437785684.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu_9a57967dd0fdb522.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu_9fb5f606ecce984c.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202111016010&#34;
@@ -436,7 +1146,7 @@
 &lt;/h2&gt;&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447.png&#34;
 	width=&#34;1188&#34;
 	height=&#34;863&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu16093267902808380463.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu16307649474403548362.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu_a9669c252076351f.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu_f716de16d37853e6.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202121918447&#34;
@@ -447,8 +1157,6 @@
 		data-flex-basis=&#34;330px&#34;
 	
 &gt;&lt;/p&gt;
-&lt;p&gt;使能后MPU6050进入自测状态(self test)，若满足自测响应值在预设范围内（下式），则可以正常使用。
-&lt;/p&gt;
 $$
 \mid 使能前的值-使能后的值\mid&lt;\Delta c
 $$&lt;p&gt;
@@ -480,7 +1188,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650.png&#34;
 	width=&#34;1184&#34;
 	height=&#34;571&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu1955486248613274823.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu16846804856568149607.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu_c8f0404c221646be.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu_96053601c985884e.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202132302650&#34;
@@ -497,7 +1205,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111.png&#34;
 	width=&#34;1247&#34;
 	height=&#34;621&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu12584441417698073643.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu12728915665899041158.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu_b374e49ca0d66d57.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu_e43c7fa6b5031150.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202133146111&#34;
@@ -514,7 +1222,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091.png&#34;
 	width=&#34;1185&#34;
 	height=&#34;639&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu16553617165888666870.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu13922646009839214522.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu_c7047db28da34a50.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu_92929191a7b11d69.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202133550091&#34;
@@ -534,7 +1242,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527.png&#34;
 	width=&#34;1570&#34;
 	height=&#34;792&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu5065808490375794823.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu13057555761100737303.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu_8c8d08ca817d4d91.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu_aecb81efe27edabc.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202134404527&#34;
@@ -551,7 +1259,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720.png&#34;
 	width=&#34;1394&#34;
 	height=&#34;782&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu3900628796441607201.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu3146868004957635367.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu_6e0f5eb128e710e0.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu_6148bd8e34f4780a.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202134724720&#34;
@@ -568,7 +1276,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541.png&#34;
 	width=&#34;1292&#34;
 	height=&#34;524&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu12190863462571856929.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu12292623753731538499.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu_76364a80632d96ae.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu_1c511c689668c283.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202134855541&#34;
@@ -589,7 +1297,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976.png&#34;
 	width=&#34;629&#34;
 	height=&#34;99&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu1839145434677540246.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu14790656899602287869.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu_24ac8f31898d5b6c.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu_3d710be8ab61c053.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202143442976&#34;
@@ -603,7 +1311,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236.png&#34;
 	width=&#34;645&#34;
 	height=&#34;53&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu10961795472818408357.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu5485030861477318272.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu_32c8b36ea5c426bd.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu_6017c613799b3a77.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202143514236&#34;
@@ -620,7 +1328,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744.png&#34;
 	width=&#34;638&#34;
 	height=&#34;105&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu7558329041019677811.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu18335207849649482377.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu_ab8d27c18f8541c0.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu_89c5df673cfdf2d3.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202143753744&#34;
@@ -634,12 +1342,11 @@ $$&lt;p&gt;
 &lt;h3 id=&#34;陀螺仪配置寄存器gyro_config&#34;&gt;陀螺仪配置寄存器GYRO_CONFIG
 &lt;/h3&gt;&lt;p&gt;第5-7位控制陀螺仪的自检（self test）；第3、4位控制满量程的选择，满量程可以根据实际使用进行调节，使得实验数据更加精确。&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;类似于高中电路实验电表的选择？&lt;/p&gt;
-&lt;/blockquote&gt;
+&lt;p&gt;类似于高中电路实验电表的选择？&lt;/p&gt;&lt;/blockquote&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224.png&#34;
 	width=&#34;628&#34;
 	height=&#34;101&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu15518479808623319305.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu5199574537763186765.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu_1c9ae0ea5b11c503.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu_3917863fb43979ca.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202144106224&#34;
@@ -653,7 +1360,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950.png&#34;
 	width=&#34;223&#34;
 	height=&#34;113&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu1622995717324948068.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu16547940533854993602.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu_ea7a53ed4fa03687.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu_2aee3ce50910350e.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202145039950&#34;
@@ -669,7 +1376,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675.png&#34;
 	width=&#34;629&#34;
 	height=&#34;100&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu1088699813567046378.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu2478362475856275624.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu_96d703e48e70de3c.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu_edc37a7705c680b4.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202144459675&#34;
@@ -683,7 +1390,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303.png&#34;
 	width=&#34;202&#34;
 	height=&#34;99&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu6428651536036496235.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu4514465934183350153.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu_b55e3be48b5c665c.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu_4b8560991753aff5.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202145459303&#34;
@@ -699,7 +1406,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184.png&#34;
 	width=&#34;784&#34;
 	height=&#34;268&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu14940450855883450931.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu5769958842122457970.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu_fab66bd10b47f3f0.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu_da6495c321e288ef.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202142020184&#34;
@@ -1243,7 +1950,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913.png&#34;
 	width=&#34;790&#34;
 	height=&#34;222&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu9115741487280417885.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu12470507306216204751.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu_74ca19eedc62f927.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu_90437b8875e00bc6.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202165409913&#34;
@@ -1257,7 +1964,7 @@ $$&lt;p&gt;
 &lt;p&gt;​		&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563.png&#34;
 	width=&#34;1000&#34;
 	height=&#34;522&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu15727333957508570821.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu12403191105152478102.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu_f0711048c75f2568.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu_b0f11fd8cbd25565.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202214240563&#34;
@@ -1316,7 +2023,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800.png&#34;
 	width=&#34;612&#34;
 	height=&#34;237&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu13483283409300206542.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu4698182059536951772.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu_c1ef42a6aaa721cb.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu_f6061e0d2b3d817d.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202225804800&#34;
@@ -1330,7 +2037,7 @@ $$&lt;p&gt;
 &lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268.png&#34;
 	width=&#34;1264&#34;
 	height=&#34;456&#34;
-	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu2516668091493612191.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu5474971423562020654.png 1024w&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu_f91a972b8c36197c.png 480w, https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu_db94bca0a906878f.png 1024w&#34;
 	loading=&#34;lazy&#34;
 	
 		alt=&#34;image-20231202225526268&#34;

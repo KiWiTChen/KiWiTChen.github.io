@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="任务目标 嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。\n这里我们以μC/OS_II为例，通过ARMKeil重构μC/OS_II代码，为后续的完整移植做铺垫；\n">
+<title>RTOS学习小记（一）——Keil重构μCOS_II</title>
+
+<link rel='canonical' href='https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/'>
+
+<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="RTOS学习小记（一）——Keil重构μCOS_II">
+<meta property='og:description' content="任务目标 嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。\n这里我们以μC/OS_II为例，通过ARMKeil重构μC/OS_II代码，为后续的完整移植做铺垫；\n">
+<meta property='og:url' content='https://KiWiTChen.github.io/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/'>
+<meta property='og:site_name' content='KiWiT'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2025-03-07T17:52:26&#43;08:00'/><meta property='article:modified_time' content='2025-03-07T17:52:26&#43;08:00'/>
+<meta name="twitter:title" content="RTOS学习小记（一）——Keil重构μCOS_II">
+<meta name="twitter:description" content="任务目标 嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。\n这里我们以μC/OS_II为例，通过ARMKeil重构μC/OS_II代码，为后续的完整移植做铺垫；\n">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu_fc2b629155691b95.png" width="300"
+                            height="378" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🥰​</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">KiWiT</a></h1>
+            <h2 class="site-description">欢迎来到我的博客，在这里我会分享一些自己的学习日常，如果有相关问题，也欢迎私信讨论</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://space.bilibili.com/492418934'
+                        target="_blank"
+                        title="Blibili"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.0.0-beta2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M488.6 104.1C505.3 122.2 513 143.8 511.9 169.8V372.2C511.5 398.6 502.7 420.3 485.4 437.3C468.2 454.3 446.3 463.2 419.9 464H92.02C65.57 463.2 43.81 454.2 26.74 436.8C9.682 419.4 .7667 396.5 0 368.2V169.8C.7667 143.8 9.682 122.2 26.74 104.1C43.81 87.75 65.57 78.77 92.02 78H121.4L96.05 52.19C90.3 46.46 87.42 39.19 87.42 30.4C87.42 21.6 90.3 14.34 96.05 8.603C101.8 2.868 109.1 0 117.9 0C126.7 0 134 2.868 139.8 8.603L213.1 78H301.1L375.6 8.603C381.7 2.868 389.2 0 398 0C406.8 0 414.1 2.868 419.9 8.603C425.6 14.34 428.5 21.6 428.5 30.4C428.5 39.19 425.6 46.46 419.9 52.19L394.6 78L423.9 78C450.3 78.77 471.9 87.75 488.6 104.1H488.6zM449.8 173.8C449.4 164.2 446.1 156.4 439.1 150.3C433.9 144.2 425.1 140.9 416.4 140.5H96.05C86.46 140.9 78.6 144.2 72.47 150.3C66.33 156.4 63.07 164.2 62.69 173.8V368.2C62.69 377.4 65.95 385.2 72.47 391.7C78.99 398.2 86.85 401.5 96.05 401.5H416.4C425.6 401.5 433.4 398.2 439.7 391.7C446 385.2 449.4 377.4 449.8 368.2L449.8 173.8zM185.5 216.5C191.8 222.8 195.2 230.6 195.6 239.7V273C195.2 282.2 191.9 289.9 185.8 296.2C179.6 302.5 171.8 305.7 162.2 305.7C152.6 305.7 144.7 302.5 138.6 296.2C132.5 289.9 129.2 282.2 128.8 273V239.7C129.2 230.6 132.6 222.8 138.9 216.5C145.2 210.2 152.1 206.9 162.2 206.5C171.4 206.9 179.2 210.2 185.5 216.5H185.5zM377 216.5C383.3 222.8 386.7 230.6 387.1 239.7V273C386.7 282.2 383.4 289.9 377.3 296.2C371.2 302.5 363.3 305.7 353.7 305.7C344.1 305.7 336.3 302.5 330.1 296.2C323.1 289.9 320.7 282.2 320.4 273V239.7C320.7 230.6 324.1 222.8 330.4 216.5C336.7 210.2 344.5 206.9 353.7 206.5C362.9 206.9 370.7 210.2 377 216.5H377z"/></svg>
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://github.com/KiWiTChen'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%8F%8B%E9%93%BE/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>友链</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#内核架构">内核架构</a></li>
+    <li><a href="#模块介绍">模块介绍</a>
+      <ol>
+        <li><a href="#core层核心一般不做修改">Core层（核心，一般不做修改）</a></li>
+        <li><a href="#port层移植层与硬件平台相关">Port层（移植层，与硬件平台相关）</a></li>
+        <li><a href="#cfg层配置文件决定任务堆栈功能">Cfg层（配置文件，决定任务、堆栈、功能）</a></li>
+      </ol>
+    </li>
+  </ol>
+
+  <ol>
+    <li>
+      <ol>
+        <li><a href="#错误类型1缺少件或找不到件">错误类型1：缺少⽂件或找不到⽂件</a></li>
+        <li><a href="#错误类型2缺少相应的数据类型的定义和函数的声明">错误类型2：缺少相应的数据类型的定义和函数的声明。</a></li>
+        <li><a href="#错误类型3os_cfgh中缺少相应功能定义">错误类型3：os_cfg.h中缺少相应功能定义。</a></li>
+        <li><a href="#错误类型4链接时重复定义">错误类型4：链接时重复定义</a>
+          <ol>
+            <li><a href="#为什么链接阶段报错而不是编译">为什么链接阶段报错而不是编译？</a></li>
+            <li><a href="#具体解决">具体解决</a></li>
+          </ol>
+        </li>
+        <li><a href="#错误类型5缺少启动件导致链接失败">错误类型5：缺少启动⽂件导致链接失败</a></li>
+        <li><a href="#错误类型6os_cpu_c中hook函数">错误类型6：os_cpu_.c中hook函数</a>
+          <ol>
+            <li><a href="#什么是hook函数">什么是Hook函数？</a></li>
+            <li><a href="#具体解决-1">具体解决</a></li>
+            <li><a href="#错误类型7中断恢复与切换实现函数">错误类型7：中断、恢复与切换实现函数</a></li>
+            <li><a href="#为什么要使用汇编">为什么要使用汇编？</a></li>
+            <li><a href="#具体解决-2">具体解决</a></li>
+          </ol>
+        </li>
+        <li><a href="#错误类型8缺少main函数">错误类型8：缺少main函数</a></li>
+      </ol>
+    </li>
+  </ol>
+
+  <ol>
+    <li>
+      <ol>
+        <li><a href="#想法1调函数">想法1：调⽤函数</a></li>
+        <li><a href="#想法2点亮灯">想法2：点亮⼩灯</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/">RTOS学习小记（一）——Keil重构μCOS_II</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Mar 07, 2025</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 12 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h1 id="任务目标">任务目标
+</h1><p>嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。</p>
+<p>这里我们以μC/OS_II为例，通过ARMKeil重构μC/OS_II代码，为后续的完整移植做铺垫；</p>
+<p>了解操作系统的基本原理，了解任务创建，栈的生成，就绪队列，中断，信号量等基本概念。</p>
+<h1 id="系统结构">系统结构
+</h1><h2 id="内核架构">内核架构
+</h2><img src="index.assets/image-20250305214253861.png" alt="image-20250305214253861" style="zoom: 80%;" />
+<p>上图是μC/OS_II的内核架构，据此我们可以参考官方源码确定重构文件结构大致如下：</p>
+<p>​																Project&ndash;|Core&ndash;|os_core.c</p>
+<p>​																							|os_task.c&hellip;</p>
+<p>​		 	  																|Cfg   &ndash;|os_cfg.h</p>
+<p>​																						     |app_cfg.h</p>
+<p>​		       																|Port &ndash;|os_cpu.h</p>
+<p>​																						    |os_cpu_c.h</p>
+<p>​																							|os_cpu_a.s</p>
+<p>​		     																  |Prj       //Keil相关编译文件</p>
+<p>​		      																 |User   //用户自定义函数以及main</p>
+<h2 id="模块介绍">模块介绍
+</h2><h3 id="core层核心一般不做修改">Core层（核心，一般不做修改）
+</h3><ul>
+<li>os_core.c：负责操作系统内核的初始化和核⼼功能的实现，包括任务调度器的初始化和空闲任务的创建。</li>
+<li>os_task.c：包含任务管理相关的函数，如任务的创建、删除和任务控制块（TCB）的操作。</li>
+<li>os_flag.c：实现事件标志组功能，⽤于任务间的同步和通信。</li>
+<li>os_mem.c：提供内存管理功能，包括内存块的分配和释放。</li>
+<li>os_tmr.c：实现软件定时器功能，允许在指定时间后执⾏特定操作。</li>
+<li>os_mutex.c：提供互斥信号量功能，⽤于保护共享资源，防⽌同时访问导致的数据不⼀致。</li>
+<li>os_sem.c：uC/OS II中的信号量（Semaphore）功能在任务间的同步和互斥上起着重要作⽤。这个⽂件实现了信号量的接⼝函数</li>
+<li>os_mbox.c: 邮箱（Mailbox）是uC/OS II⽤于任务间消息传递的机制之⼀。这个⽂件实现了邮箱功能的接⼝函数。</li>
+<li>os_q.c：队列（Queue）也是任务间通信常⽤的⽅式之⼀，这个⽂件实现了队列的接⼝函数。</li>
+<li>ucos_ii.c：这个源⽂件包含了uC/OS II内核的核⼼功能实现，如操作系统初始化、任务调度算法、时钟节拍处理、中断管理、任务创建与删除、事件标志组、信号量、互斥量、邮箱和队列等操作的代码。它是uC/OS II操作系统运⾏的基础，实现了多任务环境下的同步与通信机制。</li>
+<li>ucos_ii.h：这个头⽂件包含了uC/OS II内核中使⽤的各种数据结构的定义，如任务、事件、链表、信号量等，以及函数声明。</li>
+</ul>
+<h3 id="port层移植层与硬件平台相关">Port层（移植层，与硬件平台相关）
+</h3><p><em>⭐ Ports ⽂件夹中的⽂件包含了针对不同处理器平台的移植代码。每个处理器平台都有不同的硬件架构和操作系统接⼝，因此需要根据处理器的特点进⾏移植，以确保 uC/OS II 内核可以在特定处理器上正确地运⾏。</em></p>
+<p>STM32F401RET6是ARMV7架构的芯片，所以我们在官方的文件中能看到大致有这么几个文件：</p>
+<ul>
+<li>
+<p>os_cpu.h：定义与处理器架构相关的数据类型和宏，确保操作系统能够在特定的 CPU 上运⾏。</p>
+</li>
+<li>
+<p>os_cpu_a.asm：包含与处理器架构相关的汇编代码，如上下⽂切换和中断处理等底层操作。</p>
+</li>
+<li>
+<p>os_cpu_c.c：实现与处理器架构相关的 C 语⾔函数，如任务上下⽂初始化等。</p>
+</li>
+</ul>
+<h3 id="cfg层配置文件决定任务堆栈功能">Cfg层（配置文件，决定任务、堆栈、功能）
+</h3><ul>
+<li>os_cfg.h：⽤于配置操作系统的功能和特性，如任务数量、堆栈⼤⼩、是否启⽤某些功能等。</li>
+<li>app cfg.h：包含应⽤程序所需的头⽂件，确保编译器能够找到所有必要的声明和定义。</li>
+</ul>
+<h1 id="项目创建">项目创建
+</h1><ol>
+<li>
+<p>新建⼀个总工程⽂件夹，并在⽂件夹下⾯再新增⽂件夹Port、Cfg、Core、Prj，在Core⽂件夹中导⼊官⽹所给的⽂件。</p>
+</li>
+<li>
+<p>打开keil5，把它们导入到项目中。选择project-&gt;new uversionproject,项目文件放至Prj文件夹中，然后选好芯片型号：STM32F401RETx</p>
+<p><img src="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305225617073.png"
+	width="579"
+	height="432"
+	srcset="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305225617073_hu_75ee3e81f15a4e26.png 480w, /p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305225617073_hu_86a6131bdf6cd6a5.png 1024w"
+	loading="lazy"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="134"
+		data-flex-basis="321px"
+	
+></p>
+</li>
+<li>
+<p>右键单击target1-addgroup新建文件夹，并重命名为Core、Port和Cfg，右键单击文件夹，addexistingfilestogroup‘xxx’添加文件。<img src="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230505443.png"
+	width="944"
+	height="422"
+	srcset="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230505443_hu_f92945167235251f.png 480w, /p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230505443_hu_7c394f54adb519ae.png 1024w"
+	loading="lazy"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="223"
+		data-flex-basis="536px"
+	
+></p>
+</li>
+<li>
+<p>添加头文件路径。打开魔术棒，在C/C++和Asm里的IncludePath中写入C程序和汇编文件的路径。</p>
+</li>
+</ol>
+<p><img src="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230540754.png"
+	width="647"
+	height="461"
+	srcset="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230540754_hu_92d59d223c969723.png 480w, /p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305230540754_hu_e6e6333881438ad5.png 1024w"
+	loading="lazy"
+	
+		alt="image-20250305230540754"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="140"
+		data-flex-basis="336px"
+	
+></p>
+<h1 id="报错解决">报错解决
+</h1><h3 id="错误类型1缺少件或找不到件">错误类型1：缺少⽂件或找不到⽂件
+</h3><p><strong>解决方式：创建对应文件，暂时“骗”过编译器</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Core</span><span class="err">\</span><span class="n">ucos_ii</span><span class="p">.</span><span class="nf">h</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span><span class="o">:</span> <span class="nl">error</span><span class="p">:</span> <span class="err">#</span><span class="mi">5</span><span class="o">:</span> <span class="n">cannot</span> <span class="n">open</span> <span class="n">source</span> <span class="n">input</span> <span class="n">file</span> <span class="s">&#34;app_cfg.h&#34;</span><span class="o">:</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="n">or</span> <span class="n">directory</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这个报错信息提⽰我们缺少app_cfg.h⽂件，于是我们先建⽴⼀个空的app_cfg.h⽂件在Cfg⽂件夹中。</p>
+<p>同理添加os_cfg.h、os_cpu.h</p>
+<h3 id="错误类型2缺少相应的数据类型的定义和函数的声明">错误类型2：缺少相应的数据类型的定义和函数的声明。
+</h3><p><strong>解决方式：在os_cpu.h⽂件中添加相应的定义</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Core</span><span class="err">\</span><span class="n">ucos_ii</span><span class="p">.</span><span class="nf">h</span><span class="p">(</span><span class="mi">372</span><span class="p">)</span><span class="o">:</span> <span class="nl">error</span><span class="p">:</span> <span class="err">#</span><span class="mi">20</span><span class="o">:</span> <span class="n">identifier</span> <span class="s">&#34;INT8U&#34;</span> <span class="n">is</span> <span class="n">undefined</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<p>为什么需要定义不同的变量类型INT8U,INT16U等？</p>
+<p>由于signed int，unsigned int等原⽣类型时，其实际位数取决于处理器。⽐如在16位系统中int通常为16位，⽽在32/64位系统中，int通常为32位。这会导致移植时不同平台时产⽣数据溢出等情况。</p>
+<p>自定义数据类型，通过typedef明确定义数据类型的位数，保证了跨平台的⼀致性。</p></blockquote>
+<p>下表是对于μC/OS_II中数据类型的定义参考：</p>
+<p><img src="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305232437124.png"
+	width="657"
+	height="368"
+	srcset="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305232437124_hu_ef1a4e0edd1ffda2.png 480w, /p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250305232437124_hu_9f6306e8ae6bd07d.png 1024w"
+	loading="lazy"
+	
+		alt="image-20250305232437124"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="178"
+		data-flex-basis="428px"
+	
+></p>
+<p>所以选择在os_cpu.h文件中定义相关数据类型：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">//数据类型
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">BOOLEAN</span><span class="p">;</span> <span class="c1">// 定义布尔类型
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">INT8U</span><span class="p">;</span> <span class="c1">// ⽆符号8位整数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">signed</span> <span class="kt">char</span> <span class="n">INT8S</span><span class="p">;</span> <span class="c1">// 有符号8位整数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">short</span> <span class="n">INT16U</span><span class="p">;</span> <span class="c1">// ⽆符号16位整数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">signed</span> <span class="kt">short</span> <span class="n">INT16S</span><span class="p">;</span> <span class="c1">// 有符号16位整数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">INT32U</span><span class="p">;</span> <span class="c1">// ⽆符号32位整数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">signed</span> <span class="kt">int</span> <span class="n">INT32S</span><span class="p">;</span> <span class="c1">// 有符号32位整数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">float</span> <span class="n">FP32</span><span class="p">;</span> <span class="c1">// 单精度浮点数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">double</span> <span class="n">FP64</span><span class="p">;</span> <span class="c1">// 双精度浮点数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">OS_STK</span><span class="p">;</span> <span class="c1">// 每个栈条⽬为32位宽
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">OS_CPU_SR</span><span class="p">;</span><span class="c1">// 定义CPU状态寄存器的⼤⼩（PSR = 32位）
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="错误类型3os_cfgh中缺少相应功能定义">错误类型3：os_cfg.h中缺少相应功能定义。
+</h3><p><strong>解决方式：参考官方源码中cfg文件，在os_cfg.h⽂件中添加相应的宏定义</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">.\ucos\ucos_ii.h(1482) : error : #35 : #error directive:&#34;OS_CFG.H,MissingOS_FLAG_EN: Enable(1) or Disable (0) code generation for Event Flags
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们在os_cfg.h文件中暂时对相应参数配置如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/* ---------------------- MISCELLANEOUS ----------------------- */</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_APP_HOOKS_EN 1u </span><span class="cm">/* Application-defined hooks arecalled from the uC/OS-II hooks */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_ARG_CHK_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) argumentchecking */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_CPU_HOOKS_EN 1u </span><span class="cm">/* uC/OS-II hooks are found in theprocessor port files */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_DEBUG_EN 0u </span><span class="cm">/* Enable(1) debug variables*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_EVENT_MULTI_EN 1u </span><span class="cm">/* Include code for OSEventPendMulti()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_EVENT_NAME_EN 1u </span><span class="cm">/* Enable names for Sem, Mutex, Mboxand Q */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_LOWEST_PRIO 63u </span><span class="cm">/* Defines the lowest priority thatcan be assigned ... */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>								<span class="cm">/* ... MUST NEVER be higher than 254!*/</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_MAX_EVENTS 10u </span><span class="cm">/* Max. number of event control blocksin your application */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MAX_FLAGS 5u </span><span class="cm">/* Max. number of Event Flag Groupsin your application */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MAX_MEM_PART 5u </span><span class="cm">/* Max. number of memory partitions*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MAX_QS 4u </span><span class="cm">/* Max. number of queue control blocksin your application */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MAX_TASKS 20u </span><span class="cm">/* Max. number of tasks in yourapplication, MUST be &gt;= 2 */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_SCHED_LOCK_EN 1u </span><span class="cm">/* Include code for OSSchedLock() andOSSchedUnlock() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TICK_STEP_EN 1u </span><span class="cm">/* Enable tick stepping feature foruC/OS-View */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TICKS_PER_SEC 100u </span><span class="cm">/* Set the number of ticks in onesecond */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TLS_TBL_SIZE 0u </span><span class="cm">/* Size of Thread-Local Storage Table*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* --------------------- TASK STACK SIZE ---------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_TMR_STK_SIZE 128u </span><span class="cm">/* Timer task stack size (# ofOS_STK wide entries) */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_STAT_STK_SIZE 128u </span><span class="cm">/* Statistics task stack size (# ofOS_STK wide entries) */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_IDLE_STK_SIZE 128u </span><span class="cm">/* Idle task stack size (# ofOS_STK wide entries) */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* --------------------- TASK MANAGEMENT ---------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_CHANGE_PRIO_EN 1u </span><span class="cm">/* Include code forOSTaskChangePrio() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_CREATE_EN 1u </span><span class="cm">/* Include code for OSTaskCreate()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_CREATE_EXT_EN 1u </span><span class="cm">/* Include code forOSTaskCreateExt() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_DEL_EN 1u </span><span class="cm">/* Include code for OSTaskDel()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_NAME_EN 1u </span><span class="cm">/* Enable task names*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_PROFILE_EN 1u </span><span class="cm">/* Include variables in OS_TCB forprofiling */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_QUERY_EN 1u </span><span class="cm">/* Include code for OSTaskQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_REG_TBL_SIZE 1u </span><span class="cm">/* Size of task variables array(#of INT32U entries) */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_STAT_EN 1u </span><span class="cm">/* Enable (1) or Disable(0) thestatistics task */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_STAT_STK_CHK_EN 1u </span><span class="cm">/* Check task stacks fromstatistic task */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_SUSPEND_EN 1u </span><span class="cm">/* Include code forOSTaskSuspend() and OSTaskResume() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TASK_SW_HOOK_EN 1u </span><span class="cm">/* Include code for OSTaskSwHook()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* ----------------------- EVENT FLAGS ------------------------ */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAG_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for EVENT FLAGS */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAG_ACCEPT_EN 1u </span><span class="cm">/* Include code for OSFlagAccept()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAG_DEL_EN 1u </span><span class="cm">/* Include code for OSFlagDel()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAG_NAME_EN 1u </span><span class="cm">/* Enable names for event flaggroup */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAG_QUERY_EN 1u </span><span class="cm">/* Include code for OSFlagQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAG_WAIT_CLR_EN 1u </span><span class="cm">/* Include code for Wait on ClearEVENT FLAGS */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_FLAGS_NBITS 16u </span><span class="cm">/* Size in #bits of OS_FLAGS data type(8, 16 or 32) */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* -------------------- MESSAGE MAILBOXES --------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for MAILBOXES */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_ACCEPT_EN 1u </span><span class="cm">/* Include code for OSMboxAccept()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_DEL_EN 1u </span><span class="cm">/* Include code for OSMboxDel()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_PEND_ABORT_EN 1u </span><span class="cm">/* Include code forOSMboxPendAbort() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_POST_EN 1u </span><span class="cm">/* Include code for OSMboxPost()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_POST_OPT_EN 1u </span><span class="cm">/* Include code forOSMboxPostOpt() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MBOX_QUERY_EN 1u </span><span class="cm">/* Include code for OSMboxQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* --------------------- MEMORY MANAGEMENT -------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_MEM_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for MEMORY MANAGER */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MEM_NAME_EN 1u </span><span class="cm">/* Enable memory partition names*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MEM_QUERY_EN 1u </span><span class="cm">/* Include code for OSMemQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* ---------------- MUTUAL EXCLUSION SEMAPHORES --------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_MUTEX_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for MUTEX */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MUTEX_ACCEPT_EN 1u </span><span class="cm">/* Include code forOSMutexAccept() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_MUTEX_DEL_EN 1u </span><span class="cm">/* Include code for OSMutexDel()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_MUTEX_QUERY_EN 1u </span><span class="cm">/* Include code for OSMutexQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* ---------------------- MESSAGE QUEUES ---------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for QUEUES */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_ACCEPT_EN 1u </span><span class="cm">/* Include code for OSQAccept()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_DEL_EN 1u </span><span class="cm">/* Include code for OSQDel()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_FLUSH_EN 1u </span><span class="cm">/* Include code for OSQFlush()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_PEND_ABORT_EN 1u </span><span class="cm">/* Include code for OSQPendAbort()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_POST_EN 1u </span><span class="cm">/* Include code for OSQPost()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_POST_FRONT_EN 1u </span><span class="cm">/* Include code for OSQPostFront()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_POST_OPT_EN 1u </span><span class="cm">/* Include code for OSQPostOpt()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_Q_QUERY_EN 1u </span><span class="cm">/* Include code for OSQQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* ------------------------ SEMAPHORES ------------------------ */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_SEM_EN 1u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for SEMAPHORES */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_SEM_ACCEPT_EN 1u </span><span class="cm">/* Include code for OSSemAccept()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_SEM_DEL_EN 1u </span><span class="cm">/* Include code for OSSemDel()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_SEM_PEND_ABORT_EN 1u </span><span class="cm">/* Include code forOSSemPendAbort() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_SEM_QUERY_EN 1u </span><span class="cm">/* Include code for OSSemQuery()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_SEM_SET_EN 1u </span><span class="cm">/* Include code for OSSemSet()*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* --------------------- TIME MANAGEMENT ---------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TIME_DLY_HMSM_EN 1u </span><span class="cm">/* Include code forOSTimeDlyHMSM() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TIME_DLY_RESUME_EN 1u </span><span class="cm">/* Include code forOSTimeDlyResume() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TIME_GET_SET_EN 1u </span><span class="cm">/* Include code for OSTimeGet()and OSTimeSet() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TIME_TICK_HOOK_EN 1u </span><span class="cm">/* Include code forOSTimeTickHook() */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* --------------------- TIMER MANAGEMENT --------------------- */</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TMR_EN 0u </span><span class="cm">/* Enable (1) or Disable (0) codegeneration for TIMERS */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TMR_CFG_MAX 16u </span><span class="cm">/* Maximum number of timers*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TMR_CFG_NAME_EN 1u </span><span class="cm">/* Determine timer names*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TMR_CFG_WHEEL_SIZE 7u </span><span class="cm">/* Size of timer wheel (#Spokes)*/</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TMR_CFG_TICKS_PER_SEC 10u </span><span class="cm">/* Rate at which timer managementtask runs (Hz) */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cm">/* ---------------------- TRACE RECORDER ---------------------- */</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define OS_TRACE_EN 0u </span><span class="cm">/* Enable (1) or Disable (0) uC/OS-IITrace instrumentation */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TRACE_API_ENTER_EN 0u </span><span class="cm">/* Enable (1) or Disable (0) uC/OS-IITrace API enter instrum. */</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define OS_TRACE_API_EXIT_EN 0u </span><span class="cm">/* Enable (1) or Disable (0) uC/OS-IITrace API exit instrum. */</span><span class="cp">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<p>在后续的学习中，可以把相关的功能给禁⽤，注意部分参数的取值范围，若设定的参数不在范围内则会报错。</p></blockquote>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#define OS_TMR_EN 0u </span><span class="cm">/* Enable (1) or Disable (0) code generation for TIMERS */</span><span class="cp">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>将 OS_TMR_EN 设置为 0u 会使 uC/OS-II 禁⽤定时器功能的代码⽣成。STM32F401具有多个定时器Timer，可以满⾜定时中断、PWM输出、输⼊捕获、输出⽐较等功能，也可以使⽤Systick（SysTick是 Cortex-M 内核中的⼀个系统定时器，属于内核的⼀部分）</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#define OS_DEBUG_EN 0u </span><span class="cm">/* Enable(1) debug variables*/</span><span class="cp">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>OS_DEBUG这个功能在后续的操作中没什么⽤但是会产⽣报错，所以我们也将这个功能给关闭。</p>
+<h3 id="错误类型4链接时重复定义">错误类型4：链接时重复定义
+</h3><p><strong>解决方法：搜索重复定义的文件，调整include path</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Objects</span><span class="err">\</span><span class="n">projects</span><span class="p">.</span><span class="nl">axf</span><span class="p">:</span> <span class="nl">Error</span><span class="p">:</span> <span class="nl">L6200E</span><span class="p">:</span> <span class="n">Symbol</span> <span class="n">OSEventNameGet</span> <span class="n">multiply</span> <span class="nf">defined</span> <span class="p">(</span><span class="n">by</span> <span class="n">ucos_ii</span><span class="p">.</span><span class="n">o</span> <span class="n">and</span> <span class="n">os_core</span><span class="p">.</span><span class="n">o</span><span class="p">).</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上述报错说的是OSEventNameGet在两个文件ucos_ii.o and os_core.o中被重复定义；</p>
+<p>这两个.o文件都是编译器编译同名.c文件生成的对象（object）文件。</p>
+<p>这里一般的思路是借助CTRL+F搜索对应变量，定位重复部分，然后调整.h或者.c的“#include &lsquo;xxx&rsquo; &ldquo;部分。</p>
+<h4 id="为什么链接阶段报错而不是编译">为什么链接阶段报错而不是编译？
+</h4><p><strong>——简单理解为预处理粘贴include部分的代码块，编译不报错，但是链接时会发现”重复定义“</strong></p>
+<p>可以参考《深入理解计算机系统》这本书，或者<a class="link" href="https://zhuanlan.zhihu.com/p/476697014"  target="_blank" rel="noopener"
+    >这篇博客</a>，<img src="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211.png"
+	width="831"
+	height="129"
+	srcset="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211_hu_2d2ad451eaa0bdb2.png 480w, /p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211_hu_f9553803bd939f5c.png 1024w"
+	loading="lazy"
+	
+		alt="image-20250307165645211"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="644"
+		data-flex-basis="1546px"
+	
+></p>
+<ol>
+<li>预处理器主要将项目代码进行处理，删除注释、#include、展开宏定义等；</li>
+<li>编译器则是我们熟悉的词法分析、语法分析、语义分析等过程得到.s文件；</li>
+<li>经过汇编器处理后汇编得到.o文件;</li>
+<li>之后链接器会检查所有⽬标⽂件和库⽂件中的符号定义和引⽤；</li>
+<li>最终生成可执行程序。</li>
+</ol>
+<h4 id="具体解决">具体解决
+</h4><p>在重构项目中，ucos_ii.c文件”粘贴“了多个os_xxx.c文件中的内容，而项目中os_xxx.c也会被编译，最后在链接时发现重定义；</p>
+<img src="../../../../../../../../administractor Cheng/Desktop/markdown/四轴II挑战点一ARMKeil重构UC_OSII项目.assets/image-20250307171502174.png" alt="image-20250307171502174" style="zoom:50%;" />
+<p>所以我们只需要右键core，点击魔术棒，关闭此部分的编译包含。</p>
+<img src="index.assets/image-20250307171905834.png" alt="image-20250307171905834" style="zoom:50%;" />
+<h3 id="错误类型5缺少启动件导致链接失败">错误类型5：缺少启动⽂件导致链接失败
+</h3><p><strong>解决方法：导入对应启动文件.s</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Objects</span><span class="err">\</span><span class="n">ucosii</span><span class="p">.</span><span class="nl">axf</span><span class="p">:</span> <span class="nl">Error</span><span class="p">:</span> <span class="nl">L6320W</span><span class="p">:</span> <span class="n">Ignoring</span> <span class="o">--</span><span class="n">entry</span> <span class="n">command</span><span class="p">.</span><span class="n">Cannot</span> <span class="n">find</span> <span class="n">argument</span> <span class="err">&#39;</span><span class="n">Reset_Handler</span><span class="err">&#39;</span> <span class="c1">//截取了一条
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>缺少了启动文件，程序找不到执行入口以及中断向量表等，所以也会报错，后续我们还会对启动文件进行进一步分析；</p>
+<p>这里只需要新建一个Startup文件夹，导入startup_stm32f40_41xxx.s。</p>
+<h3 id="错误类型6os_cpu_c中hook函数">错误类型6：os_cpu_.c中hook函数
+</h3><p><strong>解决方法：暂时空定义函数，后续补充完善</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Objects</span><span class="err">\</span><span class="n">test</span><span class="p">.</span><span class="nl">axf</span><span class="p">:</span> <span class="nl">Error</span><span class="p">:</span> <span class="nl">L6218E</span><span class="p">:</span> <span class="n">Undefined</span> <span class="n">symbol</span> <span class="nf">OSCtxSw</span> <span class="p">(</span><span class="n">referred</span> <span class="n">from</span> <span class="n">os_core</span><span class="p">.</span><span class="n">o</span><span class="p">).</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="什么是hook函数">什么是Hook函数？
+</h4><p>钩子函数是uC/OS-II内核在特定操作（如任务创建、删除、切换等）前后调用的空函数（默认为空实现）。开发者通过重写这些函数，可以在不修改内核源码的情况下扩展功能。常见用途包括：</p>
+<ul>
+<li><strong>调试与监控</strong>：记录任务创建/删除时间、堆栈使用情况等。</li>
+<li><strong>资源管理</strong>：在任务创建时初始化自定义数据结构或外设。</li>
+<li><strong>性能分析</strong>：统计任务执行时间或上下文切换次数。</li>
+<li><strong>安全检查</strong>：验证任务参数的合法性。</li>
+</ul>
+<p>以<code>OSTaskCreateHook</code>为例，它在任务创建后被调用，允许开发者在任务首次运行前执行自定义逻辑。</p>
+<blockquote>
+<p>简单来讲就是获取操作系统的相关状态</p></blockquote>
+<h4 id="具体解决-1">具体解决
+</h4><p>我们需要新建⼀个os_cpu_c.c⽂件和⼀个os_cpu_a.s⽂件，在其中补充缺少的函数实现，⽬前我们不需要补全具体的函数实现细节，只需要写⼀个空定义来骗过编译器。</p>
+<p>在os_cpu_c.c⽂件中，我们定义空的系统初始化函数、钩⼦函数、cpu异常栈基地址和这是内核可⽤</p>
+<p>的优先级边界。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;os_cpu.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="c1">// 系统初始化函数，通常⽤于设置硬件相关的设置
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">SystemInit</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 定义空的钩⼦函数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">OSInitHookBegin</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">OSInitHookEnd</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">OSTCBInitHook</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">OSTaskCreateHook</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">OSTaskIdleHook</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">OSTaskReturnHook</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">OSTaskSwHook</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 任务堆栈初始化函数，为新任务分配堆栈空间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">OS_STK</span> <span class="o">*</span><span class="nf">OSTaskStkInit</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">task</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">p_arg</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="n">p_arg</span><span class="p">,</span> <span class="n">OS_STK</span> <span class="o">*</span><span class="n">ptos</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="n">INT16U</span> <span class="n">opt</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl"><span class="k">return</span> <span class="n">ptos</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 定义⼀个空的CPU异常栈基地址
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">OS_CPU_ExceptStkBase</span><span class="p">(){}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 设置内核可⽤的优先级边界
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">OS_KA_BASEPRI_Boundary</span><span class="p">(){}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="错误类型7中断恢复与切换实现函数">错误类型7：中断、恢复与切换实现函数
+</h4><p><strong>解决方法：编写汇编函数确定相关逻辑</strong></p>
+<h4 id="为什么要使用汇编">为什么要使用汇编？
+</h4><p>在os_cpu_a.s⽂件中，实现的是与处理器相关的函数,这⼀部分的函数涉及CPU 特权寄存器的访问、寄存器状态的保存与恢复，以及任务上下⽂切换。</p>
+<p>这些操作需要对CPU 体系结构和指令集进⾏精确控制，⽽⾼级语⾔（如 C）⽆法不提供直接读写特定硬件寄存器（如中断寄存器PRIMASK、堆栈PSP、任务控制块TCB）的机制，也难以确保任务切换的精确性和⾼效性。</p>
+<h4 id="具体解决-2">具体解决
+</h4><p>创建os_cpu_a.s文件，定义相关函数：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">EXPORT</span> <span class="no">OS_CPU_SR_Save</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span> <span class="no">OS_CPU_SR_Restore</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span> <span class="no">OSCtxSw</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span> <span class="no">OSIntCtxSw</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span> <span class="no">OSStartHighRdy</span>
+</span></span><span class="line"><span class="cl"><span class="nf">EXPORT</span> <span class="no">OS_CPU_PendSVHandler</span>
+</span></span><span class="line"><span class="cl"><span class="nf">AREA</span> <span class="err">|</span><span class="no">.text</span><span class="err">|</span><span class="p">,</span> <span class="no">CODE</span><span class="p">,</span> <span class="no">READONLY</span><span class="p">,</span> <span class="no">ALIGN</span><span class="err">=</span><span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="nf">THUMB</span>
+</span></span><span class="line"><span class="cl"><span class="nf">REQUIRE8</span>
+</span></span><span class="line"><span class="cl"><span class="nf">PRESERVE8</span>
+</span></span><span class="line"><span class="cl"><span class="c1">; 保存中断状态并关中断
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">OS_CPU_SR_Save</span> <span class="no">PROC</span>
+</span></span><span class="line"><span class="cl"><span class="nf">MRS</span> <span class="no">R0</span><span class="p">,</span> <span class="no">PRIMASK</span> <span class="c1">; 读取PRIMASK/BASEPRI（中断状态寄存器）并存⼊R0
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">CPSID</span> <span class="no">I</span> <span class="c1">; 关闭中断
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">BX</span> <span class="no">LR</span> <span class="c1">; 返回
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">ENDP</span>
+</span></span><span class="line"><span class="cl"><span class="c1">; 恢复中断状态
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">OS_CPU_SR_Restore</span> <span class="no">PROC</span>
+</span></span><span class="line"><span class="cl"><span class="nf">MSR</span> <span class="no">PRIMASK</span><span class="p">,</span> <span class="no">R0</span> <span class="c1">; 将R0的值写回PRIMASK/BASEPRI寄存器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">BX</span> <span class="no">LR</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ENDP</span>
+</span></span><span class="line"><span class="cl"><span class="c1">; 任务上下⽂切换，此处为空实现，仅供通过编译。以后需要实现任务上下⽂切换代码。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">OSCtxSw</span> <span class="no">PROC</span>
+</span></span><span class="line"><span class="cl"><span class="nf">BX</span> <span class="no">LR</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ENDP</span>
+</span></span><span class="line"><span class="cl"><span class="c1">; 中断级任务切换，空实现
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">OSIntCtxSw</span> <span class="no">PROC</span>
+</span></span><span class="line"><span class="cl"><span class="nf">BX</span> <span class="no">LR</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ENDP</span>
+</span></span><span class="line"><span class="cl"><span class="c1">; 启动最⾼优先级任务，空实现，实际需要初始化任务堆栈并启动第⼀个任务
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">OSStartHighRdy</span> <span class="no">PROC</span>
+</span></span><span class="line"><span class="cl"><span class="nf">BX</span> <span class="no">LR</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ENDP</span>
+</span></span><span class="line"><span class="cl"><span class="c1">; PendSV 中断处理，空实现，实际应实现PendSV中断处理以完成任务切换
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nf">OS_CPU_PendSVHandler</span> <span class="no">PROC</span>
+</span></span><span class="line"><span class="cl"><span class="nf">BX</span> <span class="no">LR</span>
+</span></span><span class="line"><span class="cl"><span class="nf">ENDP</span>
+</span></span><span class="line"><span class="cl"><span class="nf">END</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="错误类型8缺少main函数">错误类型8：缺少main函数
+</h3><p><strong>解决方法：添加主函数</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Objects</span><span class="err">\</span><span class="n">test</span><span class="p">.</span><span class="nl">axf</span><span class="p">:</span> <span class="nl">Error</span><span class="p">:</span> <span class="nl">L6218E</span><span class="p">:</span> <span class="n">Undefined</span> <span class="n">symbol</span> <span class="nf">main</span> <span class="p">(</span><span class="n">referred</span> <span class="n">from</span> <span class="n">__rtentry2</span><span class="p">.</span><span class="n">o</span><span class="p">).</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>创建user文件夹，加入main.c文件：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;ucos_ii.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="工程验证">工程验证
+</h1><h3 id="想法1调函数">想法1：调⽤函数
+</h3><p>eg：OSTimeDly(1000 * 2);</p>
+<p>预期结果：编译通过且不报错，说明⼯程搭建成功。</p>
+<h3 id="想法2点亮灯">想法2：点亮⼩灯
+</h3><p>由于任务创建点亮⼩灯需要例如创建tcb，堆栈⼤⼩优先级，队列，延时等知识，在后续的学习中我们才会学到。但我们仍想通过点亮⼩灯来验证⼯程搭建成功。</p>
+<p>因此我们的思路是：</p>
+<p>写⼀个led.c，通过上⾯我们提到的钩⼦函数调⽤led.c，再在main.c⾥⾯调⽤钩⼦函数，从⽽达到通过点亮⼩灯验证⼯程搭建是否成功。由于时间关系，我们直接来看我们写好的点灯程序。</p>
+<p>这⾥我们需要注意的是我们需要注释掉我们⾃⼰在cpu_c.h中写的空的SystemInt（）函数，因为在</p>
+<p>f401已经含有初始化系统的函数。</p>
+<p>预期结果：编译通过且不报错，板载⼩灯L2闪烁，说明⼯程搭建成功。</p>
+<h1 id="项目总结">项目总结
+</h1><p>通过本项目，掌握了μC/OS-II内核重构的核心流程，解决了跨平台移植中的典型问题，为后续实现完整RTOS功能打下坚实基础。下一步将深入任务调度与硬件驱动集成，构建实时嵌入式应用。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2024 - 
+        
+        2025 KiWiT
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.27.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

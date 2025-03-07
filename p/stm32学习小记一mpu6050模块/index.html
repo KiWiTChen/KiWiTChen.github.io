@@ -56,7 +56,7 @@
                     
                     
                         
-                        <img src="/img/avatar_hu8414970003043308804.png" width="300"
+                        <img src="/img/avatar_hu_fc2b629155691b95.png" width="300"
                             height="378" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
@@ -381,13 +381,12 @@
 </h2><p>mpu6050是一款多轴传感器融合的运动处理模块，它具有一个嵌入式<strong>3轴MEMS陀螺仪</strong>，一个<strong>3轴MEMS加速度计</strong>以及一个<strong>DMP</strong>硬件加速引擎，通过I2C通信接口，mpu6050模块可将整合的加速度以及角加速度信息发送到终端MCU，供设备使用。这一特性使其广泛运用于手机、平板、游戏控制器、可穿戴式设备等领域。</p>
 <blockquote>
 <p>在江科大提供的模块资料中，我们可以找到product specification和register map手册，但是英文版手册难以阅读，这时可以使用翻译网站<a class="link" href="https://www.deepl.com/translator"  target="_blank" rel="noopener"
-    >DeepL翻译：全世界最准确的翻译</a>进行pdf、word等格式手册的自动翻译，使用效果还是非常不错的。</p>
-</blockquote>
+    >DeepL翻译：全世界最准确的翻译</a>进行pdf、word等格式手册的自动翻译，使用效果还是非常不错的。</p></blockquote>
 <h2 id="硬件电路及引脚定义">硬件电路及引脚定义
 </h2><p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010.png"
 	width="1026"
 	height="601"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu4780308858532440570.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu3208935474437785684.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu_9a57967dd0fdb522.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202111016010_hu_9fb5f606ecce984c.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202111016010"
@@ -409,7 +408,7 @@
 </h2><p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447.png"
 	width="1188"
 	height="863"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu16093267902808380463.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu16307649474403548362.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu_a9669c252076351f.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202121918447_hu_f716de16d37853e6.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202121918447"
@@ -420,8 +419,6 @@
 		data-flex-basis="330px"
 	
 ></p>
-<p>使能后MPU6050进入自测状态(self test)，若满足自测响应值在预设范围内（下式），则可以正常使用。
-</p>
 $$
 \mid 使能前的值-使能后的值\mid<\Delta c
 $$<p>
@@ -453,7 +450,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650.png"
 	width="1184"
 	height="571"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu1955486248613274823.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu16846804856568149607.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu_c8f0404c221646be.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202132302650_hu_96053601c985884e.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202132302650"
@@ -470,7 +467,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111.png"
 	width="1247"
 	height="621"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu12584441417698073643.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu12728915665899041158.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu_b374e49ca0d66d57.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133146111_hu_e43c7fa6b5031150.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202133146111"
@@ -487,7 +484,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091.png"
 	width="1185"
 	height="639"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu16553617165888666870.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu13922646009839214522.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu_c7047db28da34a50.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202133550091_hu_92929191a7b11d69.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202133550091"
@@ -507,7 +504,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527.png"
 	width="1570"
 	height="792"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu5065808490375794823.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu13057555761100737303.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu_8c8d08ca817d4d91.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134404527_hu_aecb81efe27edabc.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202134404527"
@@ -524,7 +521,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720.png"
 	width="1394"
 	height="782"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu3900628796441607201.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu3146868004957635367.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu_6e0f5eb128e710e0.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134724720_hu_6148bd8e34f4780a.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202134724720"
@@ -541,7 +538,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541.png"
 	width="1292"
 	height="524"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu12190863462571856929.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu12292623753731538499.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu_76364a80632d96ae.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202134855541_hu_1c511c689668c283.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202134855541"
@@ -562,7 +559,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976.png"
 	width="629"
 	height="99"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu1839145434677540246.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu14790656899602287869.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu_24ac8f31898d5b6c.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143442976_hu_3d710be8ab61c053.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202143442976"
@@ -576,7 +573,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236.png"
 	width="645"
 	height="53"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu10961795472818408357.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu5485030861477318272.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu_32c8b36ea5c426bd.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143514236_hu_6017c613799b3a77.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202143514236"
@@ -593,7 +590,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744.png"
 	width="638"
 	height="105"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu7558329041019677811.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu18335207849649482377.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu_ab8d27c18f8541c0.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202143753744_hu_89c5df673cfdf2d3.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202143753744"
@@ -607,12 +604,11 @@ $$<p>
 <h3 id="陀螺仪配置寄存器gyro_config">陀螺仪配置寄存器GYRO_CONFIG
 </h3><p>第5-7位控制陀螺仪的自检（self test）；第3、4位控制满量程的选择，满量程可以根据实际使用进行调节，使得实验数据更加精确。</p>
 <blockquote>
-<p>类似于高中电路实验电表的选择？</p>
-</blockquote>
+<p>类似于高中电路实验电表的选择？</p></blockquote>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224.png"
 	width="628"
 	height="101"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu15518479808623319305.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu5199574537763186765.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu_1c9ae0ea5b11c503.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144106224_hu_3917863fb43979ca.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202144106224"
@@ -626,7 +622,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950.png"
 	width="223"
 	height="113"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu1622995717324948068.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu16547940533854993602.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu_ea7a53ed4fa03687.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145039950_hu_2aee3ce50910350e.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202145039950"
@@ -642,7 +638,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675.png"
 	width="629"
 	height="100"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu1088699813567046378.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu2478362475856275624.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu_96d703e48e70de3c.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202144459675_hu_edc37a7705c680b4.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202144459675"
@@ -656,7 +652,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303.png"
 	width="202"
 	height="99"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu6428651536036496235.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu4514465934183350153.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu_b55e3be48b5c665c.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202145459303_hu_4b8560991753aff5.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202145459303"
@@ -672,7 +668,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184.png"
 	width="784"
 	height="268"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu14940450855883450931.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu5769958842122457970.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu_fab66bd10b47f3f0.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202142020184_hu_da6495c321e288ef.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202142020184"
@@ -1216,7 +1212,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913.png"
 	width="790"
 	height="222"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu9115741487280417885.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu12470507306216204751.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu_74ca19eedc62f927.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202165409913_hu_90437b8875e00bc6.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202165409913"
@@ -1230,7 +1226,7 @@ $$<p>
 <p>​		<img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563.png"
 	width="1000"
 	height="522"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu15727333957508570821.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu12403191105152478102.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu_f0711048c75f2568.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202214240563_hu_b0f11fd8cbd25565.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202214240563"
@@ -1289,7 +1285,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800.png"
 	width="612"
 	height="237"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu13483283409300206542.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu4698182059536951772.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu_c1ef42a6aaa721cb.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225804800_hu_f6061e0d2b3d817d.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202225804800"
@@ -1303,7 +1299,7 @@ $$<p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268.png"
 	width="1264"
 	height="456"
-	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu2516668091493612191.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu5474971423562020654.png 1024w"
+	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu_f91a972b8c36197c.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80mpu6050%E6%A8%A1%E5%9D%97/index.assets/image-20231202225526268_hu_db94bca0a906878f.png 1024w"
 	loading="lazy"
 	
 		alt="image-20231202225526268"
@@ -1470,7 +1466,9 @@ $$<p>
     <section class="copyright">
         &copy; 
         
-        2024 KiWiT
+            2024 - 
+        
+        2025 KiWiT
     </section>
     
     <section class="powerby">
