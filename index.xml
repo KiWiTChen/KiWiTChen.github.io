@@ -7,7 +7,168 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>KiWiT</copyright>
-        <lastBuildDate>Mon, 24 Mar 2025 00:31:15 +0800</lastBuildDate><atom:link href="https://KiWiTChen.github.io/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Sun, 30 Mar 2025 15:59:21 +0800</lastBuildDate><atom:link href="https://KiWiTChen.github.io/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>四轴飞行器综合设计之转接板绘制</title>
+        <link>https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/</link>
+        <pubDate>Sun, 30 Mar 2025 15:59:21 +0800</pubDate>
+        
+        <guid>https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/</guid>
+        <description>&lt;h1 id=&#34;四轴飞行器转接板设计&#34;&gt;四轴飞行器转接板设计
+&lt;/h1&gt;&lt;p&gt;整体大致的思路：选材-&amp;gt;布局-&amp;gt;绘制-&amp;gt;验证-&amp;gt;调整-&amp;gt;测试&lt;/p&gt;
+&lt;h2 id=&#34;选材&#34;&gt;选材
+&lt;/h2&gt;&lt;img src=&#34;index.assets/image-20241118105923169.png&#34; alt=&#34;image-20241118105923169&#34; style=&#34;zoom:67%;&#34; /&gt;
+&lt;p&gt;遥控器和接收机的选择原因：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;对应的接收机支持PPM总线输出，通信抗干扰能力强，同时能实现飞控板单排线输入，简化连线，减轻整机重量；&lt;/li&gt;
+&lt;li&gt;便于后续解析数据。将接收机的输出端口与 STM32F401RE 主控板的 GPIO 接口连接，便可将遥控器信号转换后的电信号送入 F401 进行处理。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;​&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;什么是PPM信号：将多个通道的PWM放到一条数据帧上进行传输，具体可以参考&lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/qq997758497/article/details/102942248&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;PWM信号与PPM信号辨析&lt;/a&gt;&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20241121191654843.png&#34; alt=&#34;image-20241121191654843&#34; style=&#34;zoom: 80%;&#34; /&gt;&lt;/blockquote&gt;
+&lt;h2 id=&#34;布局&#34;&gt;布局
+&lt;/h2&gt;&lt;p&gt;可以选择单层转接板或者双层转接板，&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;双层（上下两层）的优势在于可以充分预留模块的空间，缺点是设计时加大了工作量，不一定能保证整体的美观性；&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;单层的优势在于设计较为方便，安装拼接方便，缺点在于各模块空间有限，需要综合考虑布局（三维空间上）。&lt;/p&gt;
+&lt;p&gt;我们最后选择了单层转接板，结合意法半导体官网给出的尺寸图纸，大致拟定好了转接板上各个模块的布局&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20231122095738285.png&#34; alt=&#34;image-20231122095738285&#34; style=&#34;zoom:50%;&#34; /&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;img src=&#34;index.assets/IMG_0362(20241118-114156).PNG&#34; alt=&#34;IMG_0362(20241118-114156)&#34; style=&#34;zoom: 50%;&#34; /&gt;
+&lt;h3 id=&#34;数据线&#34;&gt;数据线
+&lt;/h3&gt;&lt;p&gt;我们先规划引脚的复用，在这里有很多种方式，可以使用STM32CubeMX,也可以按照官方引脚图手动分配。为了更贴近实际引脚位置，我们考虑第二种方法。&lt;/p&gt;
+&lt;img src=&#34;index.assets/IMG_0361(20241113-161807).PNG&#34; alt=&#34;IMG_0361(20241113-161807)&#34; style=&#34;zoom:50%;&#34; /&gt;
+&lt;table&gt;
+  &lt;thead&gt;
+      &lt;tr&gt;
+          &lt;th style=&#34;text-align: center&#34;&gt;协议&lt;/th&gt;
+          &lt;th style=&#34;text-align: center&#34;&gt;引脚号&lt;/th&gt;
+          &lt;th style=&#34;text-align: center&#34;&gt;备注&lt;/th&gt;
+      &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;TIM&lt;/td&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;PB0,PB1,PA6,PA7&lt;/td&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;通用定时器TIM3&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;USART&lt;/td&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;PA2,PA3 PA11,PA12&lt;/td&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;USART2,USART6  蓝牙和串口调试&lt;/td&gt;
+      &lt;/tr&gt;
+      &lt;tr&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;IIC&lt;/td&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;PB8,PB9  PB10,PB3&lt;/td&gt;
+          &lt;td style=&#34;text-align: center&#34;&gt;IIC1,IIC2 OLED和GY86&lt;/td&gt;
+      &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;电源系统&#34;&gt;电源系统
+&lt;/h3&gt;&lt;h4 id=&#34;模块供电&#34;&gt;模块供电
+&lt;/h4&gt;&lt;p&gt;根据 User Manual-Nucleo F401RE 手册以及该开发板的原理图，共有三种供电方式：USB 供电（U5V)、外部供电（E5V）以及外部供电（7V～12V,VIN）。我们选择了外部供电（5V）和USB供电相结合的方案：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;调试时U5V给板子上电，之后开发板通过+5V和+3.3V给各个模块供电。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;组装集成系统时将跳线帽 JP5 移动至左侧两针脚（E5V)；开发板上电后进而给模块供电。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;两种方式本质上只是给STM32开发板的供电方式不同，模块的电源通路并无区别。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118103038008.png&#34;
+	width=&#34;1330&#34;
+	height=&#34;510&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118103038008_hu_c4bfb83a6950abb4.png 480w, https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118103038008_hu_89794da8ab4023cb.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image-20241118103038008&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;260&#34;
+		data-flex-basis=&#34;625px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;h4 id=&#34;电机供电&#34;&gt;电机供电
+&lt;/h4&gt;&lt;h5 id=&#34;分电板&#34;&gt;分电板
+&lt;/h5&gt;&lt;p&gt;分电板顾名思义就是分电，此外还有稳定电压和降压的功能，通过XT60模块接收来自电池的电流，然后向外输出；&lt;/p&gt;
+&lt;p&gt;具体的输出电压有3V3(VCC)、5V（下侧标出）、12V（下侧和侧边）。&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20241118110918796.png&#34; alt=&#34;image-20241118110918796&#34; style=&#34;zoom:67%;&#34; /&gt;
+&lt;p&gt;通过焊接方式可以将分电板固定在机架层，方便后续对整个系统的供电&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118212257687.png&#34;
+	width=&#34;457&#34;
+	height=&#34;332&#34;
+	srcset=&#34;https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118212257687_hu_1f708eb6f6ff015a.png 480w, https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118212257687_hu_276fb2be311f48cf.png 1024w&#34;
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;image-20241118212257687&#34;
+	
+	
+		class=&#34;gallery-image&#34; 
+		data-flex-grow=&#34;137&#34;
+		data-flex-basis=&#34;330px&#34;
+	
+&gt;&lt;/p&gt;
+&lt;h5 id=&#34;电调&#34;&gt;电调
+&lt;/h5&gt;&lt;p&gt;即：电机调速器&lt;/p&gt;
+&lt;p&gt;关于电机和电调详细工作原理的介绍，大家可以参考下面这篇文章：&lt;/p&gt;
+&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/qq_41675265/article/details/126028135&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;有刷电机，无刷电机和电调的原理&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;我们只需要知道电调能够更加快速稳定地收发信号，从接收机获得油门信号并控制电机转速变化，总结下来的使用和连接方式就是：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;电调的输入线与稳压电源连接；&lt;/li&gt;
+&lt;li&gt;电调的输出线与电机连接；&lt;/li&gt;
+&lt;li&gt;电调的信号线与接收机连接。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;调试部分&#34;&gt;调试部分
+&lt;/h3&gt;&lt;h4 id=&#34;oled&#34;&gt;OLED
+&lt;/h4&gt;&lt;p&gt;在使用GY-86模块获取x,y,z三部分的ACC和GYRO，我们可以封装相应函数，通过程序控制OLED实时展示出相关数据信息，方便后续调试&lt;/p&gt;
+&lt;h4 id=&#34;串口&#34;&gt;串口
+&lt;/h4&gt;&lt;p&gt;在规划引脚时，我们也提前预留好了一个串口数据线USART6，在裸机测试时可以通过USB-TTL模块，在上位机对开发板发送指令（或者从开发板接收指令）&lt;/p&gt;
+&lt;h2 id=&#34;绘制&#34;&gt;绘制
+&lt;/h2&gt;&lt;p&gt;第一版使用AD绘制，由于是初次绘制转接板，关于坐标尺寸没有按照官方开发板的规定设计，后面模块位置出现了部分挤占；此外，分电板的转接口封装也与购买时的XT60不同。&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20241118170110542.png&#34; alt=&#34;image-20241118170110542&#34; style=&#34;zoom:50%;&#34; /&gt;
+&lt;img src=&#34;index.assets/image-20241118170231541.png&#34; alt=&#34;image-20241118170231541&#34; style=&#34;zoom:50%;&#34; /&gt;
+&lt;p&gt;第二版以及第三版我们都采用嘉立创的EDA来进行绘制和修改，立创EDA相比AD使用起来更加灵活，同时也方便后续打板的试错，具体的使用手册大家可以参考官方文档：&lt;a class=&#34;link&#34; href=&#34;https://prodocs.lceda.cn/cn/quick-start.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;立创EDA快速入门&lt;/a&gt;。&lt;/p&gt;
+&lt;h3 id=&#34;导入原理图&#34;&gt;导入原理图
+&lt;/h3&gt;&lt;p&gt;在AD中将目标文件另存为二进制文件，然后在立创EDA中导入，之后再更新封装，绘制PCB图，使用到的封装大致如下：&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20241118162948071.png&#34; alt=&#34;image-20241118162948071&#34; style=&#34;zoom:67%;&#34; /&gt;
+&lt;h3 id=&#34;个性化设计&#34;&gt;个性化设计
+&lt;/h3&gt;&lt;h4 id=&#34;板框&#34;&gt;板框
+&lt;/h4&gt;&lt;p&gt;如果对板框形状有要求的话，可以导入DXF文件，双击导入层，可以选择导入的图层&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20250330160347831.png&#34; alt=&#34;image-20250330160347831&#34; style=&#34;zoom: 80%;&#34; /&gt;
+&lt;h4 id=&#34;logo&#34;&gt;Logo
+&lt;/h4&gt;&lt;p&gt;支持图片格式有：SVGZ、SVG、PNG、PIP、JPG、PJPEG、JPEG、JFIF格式&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20241118172436457.png&#34; alt=&#34;image-20241118172436457&#34; style=&#34;zoom:67%;&#34; /&gt;
+&lt;h3 id=&#34;成品&#34;&gt;成品
+&lt;/h3&gt;&lt;p&gt;经过修改调整，我们组最终的转接板大致如下：&lt;/p&gt;
+&lt;img src=&#34;index.assets/image-20241118174246978.png&#34; alt=&#34;image-20241118174246978&#34; style=&#34;zoom: 67%;&#34; /&gt;
+&lt;img src=&#34;index.assets/3D_transboardv2.1.png&#34; style=&#34;zoom: 33%;&#34; /&gt;
+&lt;p&gt;得到的PCB文件生成Gerber格式的文件，可以在嘉立创平台免费下单打样：领取免费券-&amp;gt;上传PCB文件-&amp;gt;选择相应信息下单。&lt;/p&gt;
+&lt;img src=&#34;index.assets/屏幕截图 2024-11-10 132345.png&#34; style=&#34;zoom: 67%;&#34; /&gt;
+&lt;h2 id=&#34;验证&#34;&gt;验证
+&lt;/h2&gt;&lt;h3 id=&#34;电源&#34;&gt;电源
+&lt;/h3&gt;&lt;p&gt;在得到成品PCB板之后，上电测试之前可以使用万用表简单检测一下电路VCC、GND等是否正确连接。先将万用表调至通断档，短接表头听到“滴滴”声响表明万用表能正常工作；然后依次测量VCC两端、GND两端以及VCC+GND，接通时能听到“滴滴&amp;rsquo;&amp;lsquo;声，不接通时无声响即检测通过。&lt;/p&gt;
+&lt;p&gt;此外万用表还可以用来测试电阻、交流电压、电流、温度等数据。&lt;/p&gt;
+&lt;img src=&#34;index.assets/IMG_20241119_164323.jpg&#34; alt=&#34;IMG_20241119_164323&#34; style=&#34;zoom: 15%;&#34; /&gt;
+&lt;blockquote&gt;
+&lt;p&gt;理论上电路网络设计合理，且PCB绘制后通过了DRC规则检查的话，PCB板的电源应该没有问题，不过为了不烧坏开发板，还是可以检测一下。&lt;/p&gt;&lt;/blockquote&gt;
+&lt;h3 id=&#34;信号&#34;&gt;信号
+&lt;/h3&gt;&lt;p&gt;示波器的使用：&lt;/p&gt;
+&lt;p&gt;将程序烧录至开发板，启动示波器，钳子一端接板上GND接口，另一端连接目标GPIO口（即发出PWM信号的引脚），可以使用Autoset功能自动设置方波展示，也可以手动调节显示波长和振幅等信息；&lt;/p&gt;
+&lt;img src=&#34;index.assets/IMG_20241119_180308.jpg&#34; alt=&#34;IMG_20241119_180308&#34; style=&#34;zoom:15%;&#34; /&gt;
+&lt;p&gt;如上图测得频率1/Δx:185.2Hz,最大电压Ma3.32V,最小Mi-120mV,占空比+D10.1%等。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Stm32学习小记（三）——STM32_Cortex M启动流程详解</title>
         <link>https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%89stm32_cortex-m%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3/</link>
         <pubDate>Mon, 24 Mar 2025 00:31:15 +0800</pubDate>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="四轴飞行器转接板设计 整体大致的思路：选材-&gt;布局-&gt;绘制-&gt;验证-&gt;调整-&gt;测试\n选材 遥控器和接收机的选择原因：\n对应的接收机支持PPM总线输出，通信抗干扰能力强，同时能实现飞控板单排线输入，简化连线，减轻整机重量； 便于后续解析数据。将接收机的输出端口与 STM32F401RE 主控板的 GPIO 接口连接，便可将遥控器信号转换后的电信号送入 F401 进行处理。 \u200b\n">
+<title>四轴飞行器综合设计之转接板绘制</title>
+
+<link rel='canonical' href='https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/'>
+
+<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="四轴飞行器综合设计之转接板绘制">
+<meta property='og:description' content="四轴飞行器转接板设计 整体大致的思路：选材-&gt;布局-&gt;绘制-&gt;验证-&gt;调整-&gt;测试\n选材 遥控器和接收机的选择原因：\n对应的接收机支持PPM总线输出，通信抗干扰能力强，同时能实现飞控板单排线输入，简化连线，减轻整机重量； 便于后续解析数据。将接收机的输出端口与 STM32F401RE 主控板的 GPIO 接口连接，便可将遥控器信号转换后的电信号送入 F401 进行处理。 \u200b\n">
+<meta property='og:url' content='https://KiWiTChen.github.io/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/'>
+<meta property='og:site_name' content='KiWiT'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2025-03-30T15:59:21&#43;08:00'/><meta property='article:modified_time' content='2025-03-30T15:59:21&#43;08:00'/>
+<meta name="twitter:title" content="四轴飞行器综合设计之转接板绘制">
+<meta name="twitter:description" content="四轴飞行器转接板设计 整体大致的思路：选材-&gt;布局-&gt;绘制-&gt;验证-&gt;调整-&gt;测试\n选材 遥控器和接收机的选择原因：\n对应的接收机支持PPM总线输出，通信抗干扰能力强，同时能实现飞控板单排线输入，简化连线，减轻整机重量； 便于后续解析数据。将接收机的输出端口与 STM32F401RE 主控板的 GPIO 接口连接，便可将遥控器信号转换后的电信号送入 F401 进行处理。 \u200b\n">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu_fc2b629155691b95.png" width="300"
+                            height="378" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🥰​</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">KiWiT</a></h1>
+            <h2 class="site-description">欢迎来到我的博客，在这里我会分享一些自己的学习日常，如果有相关问题，也欢迎私信讨论</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://space.bilibili.com/492418934'
+                        target="_blank"
+                        title="Blibili"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.0.0-beta2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M488.6 104.1C505.3 122.2 513 143.8 511.9 169.8V372.2C511.5 398.6 502.7 420.3 485.4 437.3C468.2 454.3 446.3 463.2 419.9 464H92.02C65.57 463.2 43.81 454.2 26.74 436.8C9.682 419.4 .7667 396.5 0 368.2V169.8C.7667 143.8 9.682 122.2 26.74 104.1C43.81 87.75 65.57 78.77 92.02 78H121.4L96.05 52.19C90.3 46.46 87.42 39.19 87.42 30.4C87.42 21.6 90.3 14.34 96.05 8.603C101.8 2.868 109.1 0 117.9 0C126.7 0 134 2.868 139.8 8.603L213.1 78H301.1L375.6 8.603C381.7 2.868 389.2 0 398 0C406.8 0 414.1 2.868 419.9 8.603C425.6 14.34 428.5 21.6 428.5 30.4C428.5 39.19 425.6 46.46 419.9 52.19L394.6 78L423.9 78C450.3 78.77 471.9 87.75 488.6 104.1H488.6zM449.8 173.8C449.4 164.2 446.1 156.4 439.1 150.3C433.9 144.2 425.1 140.9 416.4 140.5H96.05C86.46 140.9 78.6 144.2 72.47 150.3C66.33 156.4 63.07 164.2 62.69 173.8V368.2C62.69 377.4 65.95 385.2 72.47 391.7C78.99 398.2 86.85 401.5 96.05 401.5H416.4C425.6 401.5 433.4 398.2 439.7 391.7C446 385.2 449.4 377.4 449.8 368.2L449.8 173.8zM185.5 216.5C191.8 222.8 195.2 230.6 195.6 239.7V273C195.2 282.2 191.9 289.9 185.8 296.2C179.6 302.5 171.8 305.7 162.2 305.7C152.6 305.7 144.7 302.5 138.6 296.2C132.5 289.9 129.2 282.2 128.8 273V239.7C129.2 230.6 132.6 222.8 138.9 216.5C145.2 210.2 152.1 206.9 162.2 206.5C171.4 206.9 179.2 210.2 185.5 216.5H185.5zM377 216.5C383.3 222.8 386.7 230.6 387.1 239.7V273C386.7 282.2 383.4 289.9 377.3 296.2C371.2 302.5 363.3 305.7 353.7 305.7C344.1 305.7 336.3 302.5 330.1 296.2C323.1 289.9 320.7 282.2 320.4 273V239.7C320.7 230.6 324.1 222.8 330.4 216.5C336.7 210.2 344.5 206.9 353.7 206.5C362.9 206.9 370.7 210.2 377 216.5H377z"/></svg>
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://github.com/KiWiTChen'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%8F%8B%E9%93%BE/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>友链</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#选材">选材</a></li>
+    <li><a href="#布局">布局</a>
+      <ol>
+        <li><a href="#数据线">数据线</a></li>
+        <li><a href="#电源系统">电源系统</a>
+          <ol>
+            <li><a href="#模块供电">模块供电</a></li>
+            <li><a href="#电机供电">电机供电</a></li>
+          </ol>
+        </li>
+        <li><a href="#调试部分">调试部分</a>
+          <ol>
+            <li><a href="#oled">OLED</a></li>
+            <li><a href="#串口">串口</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+    <li><a href="#绘制">绘制</a>
+      <ol>
+        <li><a href="#导入原理图">导入原理图</a></li>
+        <li><a href="#个性化设计">个性化设计</a>
+          <ol>
+            <li><a href="#板框">板框</a></li>
+            <li><a href="#logo">Logo</a></li>
+          </ol>
+        </li>
+        <li><a href="#成品">成品</a></li>
+      </ol>
+    </li>
+    <li><a href="#验证">验证</a>
+      <ol>
+        <li><a href="#电源">电源</a></li>
+        <li><a href="#信号">信号</a></li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/">四轴飞行器综合设计之转接板绘制</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Mar 30, 2025</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 4 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h1 id="四轴飞行器转接板设计">四轴飞行器转接板设计
+</h1><p>整体大致的思路：选材-&gt;布局-&gt;绘制-&gt;验证-&gt;调整-&gt;测试</p>
+<h2 id="选材">选材
+</h2><img src="index.assets/image-20241118105923169.png" alt="image-20241118105923169" style="zoom:67%;" />
+<p>遥控器和接收机的选择原因：</p>
+<ol>
+<li>对应的接收机支持PPM总线输出，通信抗干扰能力强，同时能实现飞控板单排线输入，简化连线，减轻整机重量；</li>
+<li>便于后续解析数据。将接收机的输出端口与 STM32F401RE 主控板的 GPIO 接口连接，便可将遥控器信号转换后的电信号送入 F401 进行处理。</li>
+</ol>
+<p>​</p>
+<blockquote>
+<p>什么是PPM信号：将多个通道的PWM放到一条数据帧上进行传输，具体可以参考<a class="link" href="https://blog.csdn.net/qq997758497/article/details/102942248"  target="_blank" rel="noopener"
+    >PWM信号与PPM信号辨析</a></p>
+<img src="index.assets/image-20241121191654843.png" alt="image-20241121191654843" style="zoom: 80%;" /></blockquote>
+<h2 id="布局">布局
+</h2><p>可以选择单层转接板或者双层转接板，</p>
+<ul>
+<li>
+<p>双层（上下两层）的优势在于可以充分预留模块的空间，缺点是设计时加大了工作量，不一定能保证整体的美观性；</p>
+</li>
+<li>
+<p>单层的优势在于设计较为方便，安装拼接方便，缺点在于各模块空间有限，需要综合考虑布局（三维空间上）。</p>
+<p>我们最后选择了单层转接板，结合意法半导体官网给出的尺寸图纸，大致拟定好了转接板上各个模块的布局</p>
+<img src="index.assets/image-20231122095738285.png" alt="image-20231122095738285" style="zoom:50%;" />
+</li>
+</ul>
+<img src="index.assets/IMG_0362(20241118-114156).PNG" alt="IMG_0362(20241118-114156)" style="zoom: 50%;" />
+<h3 id="数据线">数据线
+</h3><p>我们先规划引脚的复用，在这里有很多种方式，可以使用STM32CubeMX,也可以按照官方引脚图手动分配。为了更贴近实际引脚位置，我们考虑第二种方法。</p>
+<img src="index.assets/IMG_0361(20241113-161807).PNG" alt="IMG_0361(20241113-161807)" style="zoom:50%;" />
+<div class="table-wrapper"><table>
+  <thead>
+      <tr>
+          <th style="text-align: center">协议</th>
+          <th style="text-align: center">引脚号</th>
+          <th style="text-align: center">备注</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">TIM</td>
+          <td style="text-align: center">PB0,PB1,PA6,PA7</td>
+          <td style="text-align: center">通用定时器TIM3</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">USART</td>
+          <td style="text-align: center">PA2,PA3 PA11,PA12</td>
+          <td style="text-align: center">USART2,USART6  蓝牙和串口调试</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">IIC</td>
+          <td style="text-align: center">PB8,PB9  PB10,PB3</td>
+          <td style="text-align: center">IIC1,IIC2 OLED和GY86</td>
+      </tr>
+  </tbody>
+</table></div>
+<h3 id="电源系统">电源系统
+</h3><h4 id="模块供电">模块供电
+</h4><p>根据 User Manual-Nucleo F401RE 手册以及该开发板的原理图，共有三种供电方式：USB 供电（U5V)、外部供电（E5V）以及外部供电（7V～12V,VIN）。我们选择了外部供电（5V）和USB供电相结合的方案：</p>
+<ul>
+<li>
+<p>调试时U5V给板子上电，之后开发板通过+5V和+3.3V给各个模块供电。</p>
+</li>
+<li>
+<p>组装集成系统时将跳线帽 JP5 移动至左侧两针脚（E5V)；开发板上电后进而给模块供电。</p>
+<blockquote>
+<p>两种方式本质上只是给STM32开发板的供电方式不同，模块的电源通路并无区别。</p></blockquote>
+</li>
+</ul>
+<p><img src="/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118103038008.png"
+	width="1330"
+	height="510"
+	srcset="/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118103038008_hu_c4bfb83a6950abb4.png 480w, /p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118103038008_hu_89794da8ab4023cb.png 1024w"
+	loading="lazy"
+	
+		alt="image-20241118103038008"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="260"
+		data-flex-basis="625px"
+	
+></p>
+<h4 id="电机供电">电机供电
+</h4><h5 id="分电板">分电板
+</h5><p>分电板顾名思义就是分电，此外还有稳定电压和降压的功能，通过XT60模块接收来自电池的电流，然后向外输出；</p>
+<p>具体的输出电压有3V3(VCC)、5V（下侧标出）、12V（下侧和侧边）。</p>
+<img src="index.assets/image-20241118110918796.png" alt="image-20241118110918796" style="zoom:67%;" />
+<p>通过焊接方式可以将分电板固定在机架层，方便后续对整个系统的供电</p>
+<p><img src="/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118212257687.png"
+	width="457"
+	height="332"
+	srcset="/p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118212257687_hu_1f708eb6f6ff015a.png 480w, /p/%E5%9B%9B%E8%BD%B4%E9%A3%9E%E8%A1%8C%E5%99%A8%E7%BB%BC%E5%90%88%E8%AE%BE%E8%AE%A1%E4%B9%8B%E8%BD%AC%E6%8E%A5%E6%9D%BF%E7%BB%98%E5%88%B6/index.assets/image-20241118212257687_hu_276fb2be311f48cf.png 1024w"
+	loading="lazy"
+	
+		alt="image-20241118212257687"
+	
+	
+		class="gallery-image" 
+		data-flex-grow="137"
+		data-flex-basis="330px"
+	
+></p>
+<h5 id="电调">电调
+</h5><p>即：电机调速器</p>
+<p>关于电机和电调详细工作原理的介绍，大家可以参考下面这篇文章：</p>
+<p><a class="link" href="https://blog.csdn.net/qq_41675265/article/details/126028135"  target="_blank" rel="noopener"
+    >有刷电机，无刷电机和电调的原理</a></p>
+<p>我们只需要知道电调能够更加快速稳定地收发信号，从接收机获得油门信号并控制电机转速变化，总结下来的使用和连接方式就是：</p>
+<ul>
+<li>电调的输入线与稳压电源连接；</li>
+<li>电调的输出线与电机连接；</li>
+<li>电调的信号线与接收机连接。</li>
+</ul>
+<h3 id="调试部分">调试部分
+</h3><h4 id="oled">OLED
+</h4><p>在使用GY-86模块获取x,y,z三部分的ACC和GYRO，我们可以封装相应函数，通过程序控制OLED实时展示出相关数据信息，方便后续调试</p>
+<h4 id="串口">串口
+</h4><p>在规划引脚时，我们也提前预留好了一个串口数据线USART6，在裸机测试时可以通过USB-TTL模块，在上位机对开发板发送指令（或者从开发板接收指令）</p>
+<h2 id="绘制">绘制
+</h2><p>第一版使用AD绘制，由于是初次绘制转接板，关于坐标尺寸没有按照官方开发板的规定设计，后面模块位置出现了部分挤占；此外，分电板的转接口封装也与购买时的XT60不同。</p>
+<img src="index.assets/image-20241118170110542.png" alt="image-20241118170110542" style="zoom:50%;" />
+<img src="index.assets/image-20241118170231541.png" alt="image-20241118170231541" style="zoom:50%;" />
+<p>第二版以及第三版我们都采用嘉立创的EDA来进行绘制和修改，立创EDA相比AD使用起来更加灵活，同时也方便后续打板的试错，具体的使用手册大家可以参考官方文档：<a class="link" href="https://prodocs.lceda.cn/cn/quick-start.html"  target="_blank" rel="noopener"
+    >立创EDA快速入门</a>。</p>
+<h3 id="导入原理图">导入原理图
+</h3><p>在AD中将目标文件另存为二进制文件，然后在立创EDA中导入，之后再更新封装，绘制PCB图，使用到的封装大致如下：</p>
+<img src="index.assets/image-20241118162948071.png" alt="image-20241118162948071" style="zoom:67%;" />
+<h3 id="个性化设计">个性化设计
+</h3><h4 id="板框">板框
+</h4><p>如果对板框形状有要求的话，可以导入DXF文件，双击导入层，可以选择导入的图层</p>
+<img src="index.assets/image-20250330160347831.png" alt="image-20250330160347831" style="zoom: 80%;" />
+<h4 id="logo">Logo
+</h4><p>支持图片格式有：SVGZ、SVG、PNG、PIP、JPG、PJPEG、JPEG、JFIF格式</p>
+<img src="index.assets/image-20241118172436457.png" alt="image-20241118172436457" style="zoom:67%;" />
+<h3 id="成品">成品
+</h3><p>经过修改调整，我们组最终的转接板大致如下：</p>
+<img src="index.assets/image-20241118174246978.png" alt="image-20241118174246978" style="zoom: 67%;" />
+<img src="index.assets/3D_transboardv2.1.png" style="zoom: 33%;" />
+<p>得到的PCB文件生成Gerber格式的文件，可以在嘉立创平台免费下单打样：领取免费券-&gt;上传PCB文件-&gt;选择相应信息下单。</p>
+<img src="index.assets/屏幕截图 2024-11-10 132345.png" style="zoom: 67%;" />
+<h2 id="验证">验证
+</h2><h3 id="电源">电源
+</h3><p>在得到成品PCB板之后，上电测试之前可以使用万用表简单检测一下电路VCC、GND等是否正确连接。先将万用表调至通断档，短接表头听到“滴滴”声响表明万用表能正常工作；然后依次测量VCC两端、GND两端以及VCC+GND，接通时能听到“滴滴&rsquo;&lsquo;声，不接通时无声响即检测通过。</p>
+<p>此外万用表还可以用来测试电阻、交流电压、电流、温度等数据。</p>
+<img src="index.assets/IMG_20241119_164323.jpg" alt="IMG_20241119_164323" style="zoom: 15%;" />
+<blockquote>
+<p>理论上电路网络设计合理，且PCB绘制后通过了DRC规则检查的话，PCB板的电源应该没有问题，不过为了不烧坏开发板，还是可以检测一下。</p></blockquote>
+<h3 id="信号">信号
+</h3><p>示波器的使用：</p>
+<p>将程序烧录至开发板，启动示波器，钳子一端接板上GND接口，另一端连接目标GPIO口（即发出PWM信号的引脚），可以使用Autoset功能自动设置方波展示，也可以手动调节显示波长和振幅等信息；</p>
+<img src="index.assets/IMG_20241119_180308.jpg" alt="IMG_20241119_180308" style="zoom:15%;" />
+<p>如上图测得频率1/Δx:185.2Hz,最大电压Ma3.32V,最小Mi-120mV,占空比+D10.1%等。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2024 - 
+        
+        2025 KiWiT
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.27.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
