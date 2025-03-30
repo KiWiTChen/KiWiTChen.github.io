@@ -259,36 +259,38 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ol>
-    <li><a href="#第一种启动方式">第一种启动方式</a></li>
-    <li><a href="#第二种启动方式">第二种启动方式</a></li>
-    <li><a href="#第三种启动方式">第三种启动方式</a></li>
-  </ol>
-
-  <ol>
-    <li><a href="#内存分布">内存分布</a>
+    <li><a href="#启动模式">启动模式</a>
       <ol>
-        <li><a href="#６个储存数据段">６个储存数据段</a></li>
-        <li><a href="#3种储存属性区">3种储存属性区</a></li>
-        <li><a href="#小结">小结</a></li>
+        <li><a href="#第一种启动方式">第一种启动方式</a></li>
+        <li><a href="#第二种启动方式">第二种启动方式</a></li>
+        <li><a href="#第三种启动方式">第三种启动方式</a></li>
       </ol>
     </li>
-    <li><a href="#代码详解">代码详解</a></li>
-  </ol>
-
-  <ol>
-    <li><a href="#地址映射">地址映射</a></li>
-    <li><a href="#硬件自动为msp和pc赋值开始执行reset_handler">硬件自动为MSP和PC赋值,开始执行reset_handler</a></li>
-    <li><a href="#system_init">System_Init</a></li>
-    <li><a href="#__main">__main</a>
+    <li><a href="#启动文件">启动文件</a>
       <ol>
-        <li>
+        <li><a href="#内存分布">内存分布</a>
           <ol>
-            <li><a href="#__scatterload分散加载">__scatterload(分散加载)</a></li>
-            <li><a href="#__rt_entry">__rt_entry</a></li>
+            <li><a href="#６个储存数据段">６个储存数据段</a></li>
+            <li><a href="#3种储存属性区">3种储存属性区</a></li>
+            <li><a href="#小结">小结</a></li>
+          </ol>
+        </li>
+        <li><a href="#代码详解">代码详解</a></li>
+      </ol>
+    </li>
+    <li><a href="#启动流程">启动流程</a>
+      <ol>
+        <li><a href="#地址映射">地址映射</a></li>
+        <li><a href="#硬件自动为msp和pc赋值开始执行reset_handler">硬件自动为MSP和PC赋值,开始执行reset_handler</a></li>
+        <li><a href="#system_init">System_Init</a></li>
+        <li><a href="#__main">__main</a>
+          <ol>
+            <li></li>
           </ol>
         </li>
       </ol>
     </li>
+    <li><a href="#总结">总结</a></li>
   </ol>
 </nav>
         </div>
@@ -360,8 +362,8 @@
     <section class="article-content">
     
     
-    <h1 id="启动模式">启动模式
-</h1><p>stm32有多种启动模式，以STM32F4XX为例，如下图所示：</p>
+    <h2 id="启动模式">启动模式
+</h2><p>stm32有多种启动模式，以STM32F4XX为例，如下图所示：</p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%89stm32_cortex-m%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E8%AF%A6%E8%A7%A3/index.assets/image-20250323222017423.png"
 	width="712"
 	height="189"
@@ -378,23 +380,23 @@
 ></p>
 <blockquote>
 <p>并非所有芯片都适用于这个表格，不同型号具体启动方式请参考对应手册,官方也有Bootloader介绍文档可以查看。</p></blockquote>
-<h2 id="第一种启动方式">第一种启动方式
-</h2><p>最常用的用户FLASH启动，正常工作就在这种模式下，STM32的FLASH可以擦除10万次，所以不用担心芯片哪天会被擦爆。</p>
-<h2 id="第二种启动方式">第二种启动方式
-</h2><p>系统存储器启动方式，使用串口下载程序或者使用USB-DFU模式下载程序，不建议使用这种，速度比较慢。STM32 中自带的BootLoader就是在这种启动方式中，如果出现程序硬件错误的话可以切换BOOT0/1到该模式下重新烧写Flash即可恢复正常。</p>
-<h2 id="第三种启动方式">第三种启动方式
-</h2><p>STM32内嵌的SRAM启动，一般该模式用于调试。 用J-Link在线仿真，则是下载到SRAM中。</p>
-<h1 id="启动文件">启动文件
-</h1><h2 id="内存分布">内存分布
-</h2><p>STM32的数据在物理上分别储存在RAM和Flash中。</p>
+<h3 id="第一种启动方式">第一种启动方式
+</h3><p>最常用的用户FLASH启动，正常工作就在这种模式下，STM32的FLASH可以擦除10万次，所以不用担心芯片哪天会被擦爆。</p>
+<h3 id="第二种启动方式">第二种启动方式
+</h3><p>系统存储器启动方式，使用串口下载程序或者使用USB-DFU模式下载程序，不建议使用这种，速度比较慢。STM32 中自带的BootLoader就是在这种启动方式中，如果出现程序硬件错误的话可以切换BOOT0/1到该模式下重新烧写Flash即可恢复正常。</p>
+<h3 id="第三种启动方式">第三种启动方式
+</h3><p>STM32内嵌的SRAM启动，一般该模式用于调试。 用J-Link在线仿真，则是下载到SRAM中。</p>
+<h2 id="启动文件">启动文件
+</h2><h3 id="内存分布">内存分布
+</h3><p>STM32的数据在物理上分别储存在RAM和Flash中。</p>
 <p>RAM可读可写，<strong>掉电清零</strong>。Flash可读可写，但是读写时间很长，能<strong>掉电储存</strong>，并且一般空间比RAM大很多。</p>
 <p>下图是STM32F4XX的Memory Map,可以看到，其FLASH起始地址为0x0800 0000,大小为512KB</p>
 <img src="index.assets/image-20250323224252499.png" alt="image-20250323224252499" style="zoom: 80%;" />
 <p>那么FLASH和RAM主要存储哪些数据呢？这里又涉及到了<strong>６个储存数据段</strong>和<strong>３种储存属性区</strong>的概念，可以参考<a class="link" href="https://blog.csdn.net/xingqingly/article/details/120260398"  target="_blank" rel="noopener"
     >这篇博客</a>。</p>
 <img src="index.assets/image-20250323225520275.png" alt="image-20250323225520275" style="zoom:50%;" />
-<h3 id="６个储存数据段">６个储存数据段
-</h3><p><strong>data</strong>
+<h4 id="６个储存数据段">６个储存数据段
+</h4><p><strong>data</strong>
 数据段，储存已初始化的，且初始化不为0的全局变量和静态变量。</p>
 <p><strong>bss</strong>
 Block Started by Symbol。储存未初始化的，或初始化为0的全局变量和静态变量。</p>
@@ -414,19 +416,19 @@ Block Started by Symbol。储存未初始化的，或初始化为0的全局变�
 堆，存放进程运行中被动态分配的内存段。其可用大小定义在启动文件startup_stm32fxx.s中，由程序员使用malloc()和free()函数进行分配和释放。</p>
 <p><strong>stack</strong>
 栈，其大小定义在启动文件startup_stm32fxx.s中，由系统自动分配和释放。可存放局部变量、函数的参数和返回值，中断发生时能保存现场。但是static声明的局部静态变量不储存在栈中，而是放在data数据段。</p>
-<h3 id="3种储存属性区">3种储存属性区
-</h3><p><strong>RO(Read Only)</strong>
+<h4 id="3种储存属性区">3种储存属性区
+</h4><p><strong>RO(Read Only)</strong>
 烧写到Flash中，可以长久保存。text代码段和constdata都属于RO。由于需要掉电储存，RO里也保存了一份data的数据。</p>
 <p><strong>RW(Read Write)</strong>
 储存在RAM中。data属于此区。上电时单片机会将Flash中保存的data类型数据复制到RAM中，以供读写使用。</p>
 <p><strong>ZI(Zero Init)</strong>
 零初始化区，同样储存在RAM里。系统上电时会把此区域的数据进行0初始化。bss，heap，stack均属于这个区域。</p>
-<h3 id="小结">小结
-</h3><p>链接时记录bss段大小，装载（后续会提到）时分配空间</p>
+<h4 id="小结">小结
+</h4><p>链接时记录bss段大小，装载（后续会提到）时分配空间</p>
 <p>FLASH：Code + RO-Data + RW-Data（运行时搬运到RAM里面）</p>
 <p>SRAM： RW-Data + ZI-Data</p>
-<h2 id="代码详解">代码详解
-</h2><p>打开startup_stm32f40_41xxx.s文件，我们可以查看详细启动文件代码。</p>
+<h3 id="代码详解">代码详解
+</h3><p>打开startup_stm32f40_41xxx.s文件，我们可以查看详细启动文件代码。</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -705,17 +707,17 @@ Block Started by Symbol。储存未初始化的，或初始化为0的全局变�
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>如果使用了microlib则将栈顶地址和堆的起始、结束地址export出去，microlib会进行堆栈初始化的操作，若是没有使用，则堆栈初始化时会使用__user_initial_stackheap函数。</p>
-<h1 id="启动流程">启动流程
-</h1><h2 id="地址映射">地址映射
-</h2><p>STM32的代码是烧写到flash中的，通过查询手册可知，STM32F401XX的flash的起始地址是0x08000000；当然通过KEIL已配置好的工程也能查看flash信息：</p>
+<h2 id="启动流程">启动流程
+</h2><h3 id="地址映射">地址映射
+</h3><p>STM32的代码是烧写到flash中的，通过查询手册可知，STM32F401XX的flash的起始地址是0x08000000；当然通过KEIL已配置好的工程也能查看flash信息：</p>
 <img src="index.assets/image-20250323232221995.png" alt="image-20250323232221995" style="zoom: 80%;" />
 <p>但是Cortex-M内核规定上电后必须从0x00000000的位置开始执行，这就需要一个<strong>地址映射</strong>的操作，不论stm32的启动模式是本文开头说的哪一种，都会将该启动区域的代码映射到0x00000000的位置，进入keil的调试模式打开memory窗口，输入查看0x00000000和0x08000000：</p>
 <img src="index.assets/image-20250323232707187.png" alt="image-20250323232707187" style="zoom:80%;" />
 <img src="index.assets/image-20250323232808393.png" alt="image-20250323232808393" style="zoom:80%;" />
 <p>我们可以发现数据是完全相同的。</p>
 <p>通过地址映射机制，同一份代码可通过硬件配置在不同启动模式下运行，用户不需要关心物理地址的具体位置，只需使用链接脚本将代码和数据分配到正确的地址区域。例如，中断向量表默认放在Flash的起始位置，但通过VTOR寄存器可以重定位到SRAM，这种灵活性在调试或需要动态加载代码时非常有用，从而提高了开发效率</p>
-<h2 id="硬件自动为msp和pc赋值开始执行reset_handler">硬件自动为MSP和PC赋值,开始执行reset_handler
-</h2><p>分析启动代码时我们提到过，从DATA段开始才是代码段的起始位置，那么0x08000000作为起始地址的4字节空间存储的就是__initial_sp的地址，即栈顶地址，上电或复位后，硬件会自动将该地址赋给<strong>MSP</strong>，即主栈指针，随后将0x08000004作为起始地址的4字节空间内容，也就是reset_handler函数入口地址赋给<strong>PC</strong>。</p>
+<h3 id="硬件自动为msp和pc赋值开始执行reset_handler">硬件自动为MSP和PC赋值,开始执行reset_handler
+</h3><p>分析启动代码时我们提到过，从DATA段开始才是代码段的起始位置，那么0x08000000作为起始地址的4字节空间存储的就是__initial_sp的地址，即栈顶地址，上电或复位后，硬件会自动将该地址赋给<strong>MSP</strong>，即主栈指针，随后将0x08000004作为起始地址的4字节空间内容，也就是reset_handler函数入口地址赋给<strong>PC</strong>。</p>
 <p>此时程序会立刻去执行<strong>reset_handler</strong>，让我们回过头来看看reset_handler中做了些什么：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -744,14 +746,14 @@ Block Started by Symbol。储存未初始化的，或初始化为0的全局变�
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>可以看到，reset_handler中执行了两个程序，<strong>SystemInit</strong>和**__main**。</p>
-<h2 id="system_init">System_Init
-</h2><p>不同型号芯片的默认systeminit函数有所区别，内容往往是初始化时钟、FPU等。</p>
+<h3 id="system_init">System_Init
+</h3><p>不同型号芯片的默认systeminit函数有所区别，内容往往是初始化时钟、FPU等。</p>
 <p>用户没有重写&quot;_ _main&quot;的情况下，该函数并不在库文件中，而是由armlink创建，如果想要在keil调试的时候查看__main的具体执行过程，需要在BX R0指令运行前点击汇编代码的内容框，再继续单步执行，则可以看到 _ _main的汇编代码，否则会直接跳进main函数。</p>
 <img src="index.assets/image-20250324000905773.png" alt="image-20250324000905773" style="zoom:80%;" />
-<h2 id="__main">__main
-</h2><p>_ _main中调用了 _ _scatterload和 _ _rt_entry两个函数：</p>
-<h4 id="__scatterload分散加载">__scatterload(分散加载)
-</h4><p>默认的__scatterload函数做了两件事：</p>
+<h3 id="__main">__main
+</h3><p>_ _main中调用了 _ _scatterload和 _ _rt_entry两个函数：</p>
+<h5 id="__scatterload分散加载">__scatterload(分散加载)
+</h5><p>默认的__scatterload函数做了两件事：</p>
 <p>1.将ZI段数据全部初始化为0</p>
 <p>2.将“非根区域”的数据从加载域复制到执行域（将可读可写的数据搬运到RAM）</p>
 <p>在keil工程目录下的${工程名}.sct文件中可以查看加载域和执行域的地址以及数据存储位置：</p>
@@ -792,8 +794,8 @@ Block Started by Symbol。储存未初始化的，或初始化为0的全局变�
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>可以看到，加载域的地址就是flash的地址，且只读的数据（RO、XO）放在flash（0x08000000&ndash;0x08080000）中，可读可写的数据（RW、ZI）放在RAM（0x20000000&ndash;0x20018000）中。</p>
-<h4 id="__rt_entry">__rt_entry
-</h4><p>_ _scatterload函数执行完后接着调用 _ _rt_entry， _ _rt_entry又调用了如下函数：</p>
+<h5 id="__rt_entry">__rt_entry
+</h5><p>_ _scatterload函数执行完后接着调用 _ _rt_entry， _ _rt_entry又调用了如下函数：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -829,8 +831,8 @@ Block Started by Symbol。储存未初始化的，或初始化为0的全局变�
 </div><p>其中__user_setup_stackheap就是启动文件末尾的函数，如果没有使用microlib的话就会调用它。</p>
 <p>__rt_entry负责初始化堆栈以及C语言库子系统，即C语言代码运行所必需的环境，随后万事俱备，就可以跳入main函数执行C语言代码了。</p>
 <p>当然，如果没有在main函数中写死循环的话，main函数执行完了后会到达exit退出程序。</p>
-<h1 id="总结">总结
-</h1><p>总结一下，芯片上电第一件事是把代码空间的第一行，即<strong>栈顶指针</strong>赋给msp，随后将第二行reset_handler的<strong>入口地址</strong>赋给pc，使程序立刻跳转去执行<strong>reset_handler</strong>，在reset_handler中先初始化时钟、FPU等硬件相关配置（具体内容根据芯片型号有所不同），再初始化ZI段，将代码和数据从加载域<strong>搬运</strong>到执行域，随后初始化堆栈和C语言库子系统，使得C语言代码能够正常运行，最后跳入<strong>main函数执行</strong>用户编写的C程序。</p>
+<h2 id="总结">总结
+</h2><p>总结一下，芯片上电第一件事是把代码空间的第一行，即<strong>栈顶指针</strong>赋给msp，随后将第二行reset_handler的<strong>入口地址</strong>赋给pc，使程序立刻跳转去执行<strong>reset_handler</strong>，在reset_handler中先初始化时钟、FPU等硬件相关配置（具体内容根据芯片型号有所不同），再初始化ZI段，将代码和数据从加载域<strong>搬运</strong>到执行域，随后初始化堆栈和C语言库子系统，使得C语言代码能够正常运行，最后跳入<strong>main函数执行</strong>用户编写的C程序。</p>
 
 </section>
 

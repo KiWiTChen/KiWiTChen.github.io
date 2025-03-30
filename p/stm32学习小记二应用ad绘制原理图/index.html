@@ -259,6 +259,11 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ol>
+    <li><a href="#创建工程">创建工程</a>
+      <ol>
+        <li><a href="#元件符号">元件符号</a></li>
+      </ol>
+    </li>
     <li><a href="#简单元器件的绘制自制原理图库">简单元器件的绘制(自制原理图库)</a>
       <ol>
         <li><a href="#电容cap">电容(CAP)</a></li>
@@ -270,27 +275,21 @@
     <li><a href="#原理图库的调用">原理图库的调用</a>
       <ol>
         <li><a href="#其他库中调用">其他库中调用</a></li>
-        <li><a href="#导入外部库">导入外部库</a>
-          <ol>
-            <li><a href="#intlib">.intlib</a></li>
-            <li><a href="#schlib">.schlib</a></li>
-            <li><a href="#pcblib">.pcblib</a></li>
-          </ol>
-        </li>
+        <li><a href="#导入外部库">导入外部库</a></li>
       </ol>
     </li>
     <li><a href="#原理图库的正确性检查">原理图库的正确性检查</a></li>
     <li><a href="#原理图的绘制">原理图的绘制</a>
       <ol>
-        <li><a href="#页面调整"><strong>页面调整</strong></a></li>
+        <li><a href="#页面调整">页面调整</a></li>
         <li><a href="#芯片绘制">芯片绘制</a></li>
         <li><a href="#芯片引脚分类以及最小系统">芯片引脚分类以及“最小系统”</a></li>
         <li><a href="#接线与网络标签">接线与网络标签</a></li>
-        <li><a href="#整体修改编号"><strong>整体修改编号</strong></a></li>
+        <li><a href="#整体修改编号">整体修改编号</a></li>
         <li><a href="#划分区块">划分区块</a></li>
-        <li><a href="#封装统一管理"><strong>封装统一管理</strong></a></li>
-        <li><a href="#编译原理图"><strong>编译原理图</strong></a></li>
-        <li><a href="#原理图打印"><strong>原理图打印</strong></a></li>
+        <li><a href="#封装统一管理">封装统一管理</a></li>
+        <li><a href="#编译原理图">编译原理图</a></li>
+        <li><a href="#原理图打印">原理图打印</a></li>
       </ol>
     </li>
   </ol>
@@ -364,8 +363,8 @@
     <section class="article-content">
     
     
-    <h1 id="创建工程">创建工程
-</h1><p>一个完整的PCB工程应该包含lib、schdoc、pcbdoc,在本节我们先学习绘制schlib即原理图。</p>
+    <h2 id="创建工程">创建工程
+</h2><p>一个完整的PCB工程应该包含lib、schdoc、pcbdoc,在本节我们先学习绘制schlib即原理图。</p>
 <p>创建之后的文件目录参考：</p>
 <p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909191102337.png"
 	width="270"
@@ -396,8 +395,8 @@
 		data-flex-basis="256px"
 	
 ></p>
-<h1 id="元件符号">元件符号
-</h1><p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035.png"
+<h3 id="元件符号">元件符号
+</h3><p><img src="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035.png"
 	width="380"
 	height="235"
 	srcset="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035_hu_81a75b07e3ecd3e.png 480w, /p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%BA%8C%E5%BA%94%E7%94%A8ad%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86%E5%9B%BE/index.assets/image-20240909193032035_hu_fc13f8a982c3aa7d.png 1024w"
@@ -469,8 +468,8 @@
 <img src="index.assets/image-20240920205026146.png" alt="image-20240920205026146" style="zoom:67%;" />
 <p>将+、-移动到三角形内部。</p>
 <p>一个器件可以有多个part</p>
-<img src="../../../../../../../../administractor Cheng/Desktop/markdown/PCB绘制.assets/image-20240920205532387.png" alt="image-20240920205532387" style="zoom:67%;" />
-<img src="../../../../../../../../administractor Cheng/Desktop/markdown/PCB绘制.assets/image-20240920205931262.png" alt="image-20240920205931262" style="zoom:67%;" />
+<img src="index.assets/image-20240920205532387.png" alt="image-20240920205532387" style="zoom:67%;" />
+<img src="index.assets/image-20240920205931262.png" alt="image-20240920205931262" style="zoom:67%;" />
 <p>![](index.assets/屏幕截图 2024-09-20 205411.png)</p>
 <h2 id="原理图库的调用">原理图库的调用
 </h2><h3 id="其他库中调用">其他库中调用
@@ -492,12 +491,12 @@
 ></p>
 <p>复制后粘贴到自己的SCH Library</p>
 <h3 id="导入外部库">导入外部库
-</h3><h4 id="intlib">.intlib
-</h4><p>集成库，既有原理图库，也有封装</p>
-<h4 id="schlib">.schlib
-</h4><p>仅原理图库</p>
-<h4 id="pcblib">.pcblib
-</h4><p>仅封装库</p>
+</h3><p><strong>.intlib</strong></p>
+<p>集成库，既有原理图库，也有封装</p>
+<p><strong>.schlib</strong></p>
+<p>仅原理图库</p>
+<p><strong>.pcblib</strong></p>
+<p>仅封装库</p>
 <p>一般来说，AD软件下载安装后会自带两个库，但是不能满足我们的需求，比如在绘制STM32F4系列时，我们需要用到F4的库，网上找了很多，但是直接导入.intlib最为省事，这里给出了github上的一个文件：[下载地址](<a class="link" href="https://github.com/ryankurte/altium-library/blob/master/third_party/STMicroelectronics"  target="_blank" rel="noopener"
     >https://github.com/ryankurte/altium-library/blob/master/third_party/STMicroelectronics</a> STM32 F4.IntLib)</p>
 <p>总结：</p>
@@ -510,7 +509,7 @@
 <img src="index.assets/屏幕截图 2024-09-20 214338.png" style="zoom:67%;" />
 <h2 id="原理图的绘制">原理图的绘制
 </h2><p>这里我们以STM32F401RET6为例，尝试简单绘制一下原理图</p>
-<h3 id="页面调整"><strong>页面调整</strong>
+<h3 id="页面调整">页面调整
 </h3><p>双击原理图边缘进入属性面板，可调整纸张尺寸，网格大小，隐藏表头和边框</p>
 <p>设计(D) -&gt; 模板(T) -&gt; 本地(L) 可调用官方的原理图预设模板</p>
 <img src="index.assets/image-20241022224306067.png" alt="image-20241022224306067" style="zoom:67%;" />
@@ -533,18 +532,18 @@
 <p>两个相同名称的网络标签默认连接端口，离图连接器等网络标识符可以可表示图之间的网络连接</p>
 <p>![](index.assets/屏幕截图 2024-10-14 111145.png)</p>
 <p>（按住Alt，鼠标单击某个网络标签，就能看到相同的网络标签对应高亮显示）</p>
-<h3 id="整体修改编号"><strong>整体修改编号</strong>
+<h3 id="整体修改编号">整体修改编号
 </h3><p>全部元件放入后可整体编号，使每个元件都有标号且不冲突即可</p>
 <p>工具(T) -&gt; 标注(A) -&gt; 原理图标注(A）</p>
 <img src="index.assets/image-20241022224954025.png" alt="image-20241022224954025" style="zoom:67%;" />
 <h3 id="划分区块">划分区块
 </h3><p>为了使原理图简便易读，可以用线条将其划分成多个模块，后续设计PCB图时也能有帮助。</p>
 <img src="index.assets/image-20241022224412412.png" alt="image-20241022224412412" style="zoom:67%;" />
-<h3 id="封装统一管理"><strong>封装统一管理</strong>
+<h3 id="封装统一管理">封装统一管理
 </h3><p>工具(T) -&gt; 封装管理器(G) ，可统一添加封装。</p>
 <p>接收变化 -&gt; 验证变更 -&gt; 执行变更</p>
 <img src="index.assets/image-20241022225242862.png" alt="image-20241022225242862" style="zoom:67%;" />
-<h3 id="编译原理图"><strong>编译原理图</strong>
+<h3 id="编译原理图">编译原理图
 </h3><p>工程右键-&gt;工程选项(O) 可查看原理图规则设置</p>
 <p>集中检查以下对象，可将其配置为错误(只有警告视为编译通过，不会报错)</p>
 <ol>
@@ -569,7 +568,7 @@
 </ol>
 <p>项目(C) -&gt;Validate PCB Project，编译原理图，原理图设计不合理处(走线悬空，元件之间堆叠等)，会出</p>
 <p>现报错，可根据软件的报错信息定位报错位置，做出相应的修改。</p>
-<h3 id="原理图打印"><strong>原理图打印</strong>
+<h3 id="原理图打印">原理图打印
 </h3><p>文件(F) -&gt; 智能PDF(M) 进入PDF创建下载</p>
 <p>选择输出文档范围，是否对BOM表(物料清单)进行输出，参数设置</p>
 <img src="index.assets/image-20241022225507530.png" alt="image-20241022225507530" style="zoom:67%;" />

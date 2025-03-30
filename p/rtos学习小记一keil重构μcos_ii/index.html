@@ -259,50 +259,43 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ol>
-    <li><a href="#内核架构">内核架构</a></li>
-    <li><a href="#模块介绍">模块介绍</a>
+    <li><a href="#任务目标">任务目标</a></li>
+    <li><a href="#系统结构">系统结构</a>
       <ol>
-        <li><a href="#core层核心一般不做修改">Core层（核心，一般不做修改）</a></li>
-        <li><a href="#port层移植层与硬件平台相关">Port层（移植层，与硬件平台相关）</a></li>
-        <li><a href="#cfg层配置文件决定任务堆栈功能">Cfg层（配置文件，决定任务、堆栈、功能）</a></li>
-      </ol>
-    </li>
-  </ol>
-
-  <ol>
-    <li>
-      <ol>
-        <li><a href="#错误类型1缺少件或找不到件">错误类型1：缺少⽂件或找不到⽂件</a></li>
-        <li><a href="#错误类型2缺少相应的数据类型的定义和函数的声明">错误类型2：缺少相应的数据类型的定义和函数的声明。</a></li>
-        <li><a href="#错误类型3os_cfgh中缺少相应功能定义">错误类型3：os_cfg.h中缺少相应功能定义。</a></li>
-        <li><a href="#错误类型4链接时重复定义">错误类型4：链接时重复定义</a>
+        <li><a href="#内核架构">内核架构</a></li>
+        <li><a href="#模块介绍">模块介绍</a>
           <ol>
-            <li><a href="#为什么链接阶段报错而不是编译">为什么链接阶段报错而不是编译？</a></li>
-            <li><a href="#具体解决">具体解决</a></li>
+            <li><a href="#core层核心一般不做修改">Core层（核心，一般不做修改）</a></li>
+            <li><a href="#port层移植层与硬件平台相关">Port层（移植层，与硬件平台相关）</a></li>
+            <li><a href="#cfg层配置文件决定任务堆栈功能">Cfg层（配置文件，决定任务、堆栈、功能）</a></li>
           </ol>
         </li>
-        <li><a href="#错误类型5缺少启动件导致链接失败">错误类型5：缺少启动⽂件导致链接失败</a></li>
-        <li><a href="#错误类型6os_cpu_c中hook函数">错误类型6：os_cpu_.c中hook函数</a>
+      </ol>
+    </li>
+    <li><a href="#项目创建">项目创建</a></li>
+    <li><a href="#报错解决">报错解决</a>
+      <ol>
+        <li>
           <ol>
-            <li><a href="#什么是hook函数">什么是Hook函数？</a></li>
-            <li><a href="#具体解决-1">具体解决</a></li>
+            <li><a href="#错误类型1缺少件或找不到件">错误类型1：缺少⽂件或找不到⽂件</a></li>
+            <li><a href="#错误类型2缺少相应的数据类型的定义和函数的声明">错误类型2：缺少相应的数据类型的定义和函数的声明。</a></li>
+            <li><a href="#错误类型3os_cfgh中缺少相应功能定义">错误类型3：os_cfg.h中缺少相应功能定义。</a></li>
+            <li><a href="#错误类型4链接时重复定义">错误类型4：链接时重复定义</a></li>
+            <li><a href="#错误类型5缺少启动件导致链接失败">错误类型5：缺少启动⽂件导致链接失败</a></li>
+            <li><a href="#错误类型6os_cpu_c中hook函数">错误类型6：os_cpu_.c中hook函数</a></li>
             <li><a href="#错误类型7中断恢复与切换实现函数">错误类型7：中断、恢复与切换实现函数</a></li>
-            <li><a href="#为什么要使用汇编">为什么要使用汇编？</a></li>
-            <li><a href="#具体解决-2">具体解决</a></li>
+            <li><a href="#错误类型8缺少main函数">错误类型8：缺少main函数</a></li>
           </ol>
         </li>
-        <li><a href="#错误类型8缺少main函数">错误类型8：缺少main函数</a></li>
       </ol>
     </li>
-  </ol>
-
-  <ol>
-    <li>
+    <li><a href="#工程验证">工程验证</a>
       <ol>
         <li><a href="#想法1调函数">想法1：调⽤函数</a></li>
         <li><a href="#想法2点亮灯">想法2：点亮⼩灯</a></li>
       </ol>
     </li>
+    <li><a href="#项目总结">项目总结</a></li>
   </ol>
 </nav>
         </div>
@@ -374,13 +367,13 @@
     <section class="article-content">
     
     
-    <h1 id="任务目标">任务目标
-</h1><p>嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。</p>
+    <h2 id="任务目标">任务目标
+</h2><p>嵌⼊式操作系统是介于⽤⼾程序和硬件间，操作系统对⽤⼾隐藏了硬件细节，⽤⼾只需要根据操作系统提供的接⼝便能对各种硬件资源进⾏访问。</p>
 <p>这里我们以μC/OS_II为例，通过ARMKeil重构μC/OS_II代码，为后续的完整移植做铺垫；</p>
 <p>了解操作系统的基本原理，了解任务创建，栈的生成，就绪队列，中断，信号量等基本概念。</p>
-<h1 id="系统结构">系统结构
-</h1><h2 id="内核架构">内核架构
-</h2><img src="index.assets/image-20250305214253861.png" alt="image-20250305214253861" style="zoom: 80%;" />
+<h2 id="系统结构">系统结构
+</h2><h3 id="内核架构">内核架构
+</h3><img src="index.assets/image-20250305214253861.png" alt="image-20250305214253861" style="zoom: 80%;" />
 <p>上图是μC/OS_II的内核架构，据此我们可以参考官方源码确定重构文件结构大致如下：</p>
 <p>​																Project&ndash;|Core&ndash;|os_core.c</p>
 <p>​																							|os_task.c&hellip;</p>
@@ -391,9 +384,9 @@
 <p>​																							|os_cpu_a.s</p>
 <p>​		     																  |Prj       //Keil相关编译文件</p>
 <p>​		      																 |User   //用户自定义函数以及main</p>
-<h2 id="模块介绍">模块介绍
-</h2><h3 id="core层核心一般不做修改">Core层（核心，一般不做修改）
-</h3><ul>
+<h3 id="模块介绍">模块介绍
+</h3><h4 id="core层核心一般不做修改">Core层（核心，一般不做修改）
+</h4><ul>
 <li>os_core.c：负责操作系统内核的初始化和核⼼功能的实现，包括任务调度器的初始化和空闲任务的创建。</li>
 <li>os_task.c：包含任务管理相关的函数，如任务的创建、删除和任务控制块（TCB）的操作。</li>
 <li>os_flag.c：实现事件标志组功能，⽤于任务间的同步和通信。</li>
@@ -406,8 +399,8 @@
 <li>ucos_ii.c：这个源⽂件包含了uC/OS II内核的核⼼功能实现，如操作系统初始化、任务调度算法、时钟节拍处理、中断管理、任务创建与删除、事件标志组、信号量、互斥量、邮箱和队列等操作的代码。它是uC/OS II操作系统运⾏的基础，实现了多任务环境下的同步与通信机制。</li>
 <li>ucos_ii.h：这个头⽂件包含了uC/OS II内核中使⽤的各种数据结构的定义，如任务、事件、链表、信号量等，以及函数声明。</li>
 </ul>
-<h3 id="port层移植层与硬件平台相关">Port层（移植层，与硬件平台相关）
-</h3><p><em>⭐ Ports ⽂件夹中的⽂件包含了针对不同处理器平台的移植代码。每个处理器平台都有不同的硬件架构和操作系统接⼝，因此需要根据处理器的特点进⾏移植，以确保 uC/OS II 内核可以在特定处理器上正确地运⾏。</em></p>
+<h4 id="port层移植层与硬件平台相关">Port层（移植层，与硬件平台相关）
+</h4><p><em>⭐ Ports ⽂件夹中的⽂件包含了针对不同处理器平台的移植代码。每个处理器平台都有不同的硬件架构和操作系统接⼝，因此需要根据处理器的特点进⾏移植，以确保 uC/OS II 内核可以在特定处理器上正确地运⾏。</em></p>
 <p>STM32F401RET6是ARMV7架构的芯片，所以我们在官方的文件中能看到大致有这么几个文件：</p>
 <ul>
 <li>
@@ -420,13 +413,13 @@
 <p>os_cpu_c.c：实现与处理器架构相关的 C 语⾔函数，如任务上下⽂初始化等。</p>
 </li>
 </ul>
-<h3 id="cfg层配置文件决定任务堆栈功能">Cfg层（配置文件，决定任务、堆栈、功能）
-</h3><ul>
+<h4 id="cfg层配置文件决定任务堆栈功能">Cfg层（配置文件，决定任务、堆栈、功能）
+</h4><ul>
 <li>os_cfg.h：⽤于配置操作系统的功能和特性，如任务数量、堆栈⼤⼩、是否启⽤某些功能等。</li>
 <li>app cfg.h：包含应⽤程序所需的头⽂件，确保编译器能够找到所有必要的声明和定义。</li>
 </ul>
-<h1 id="项目创建">项目创建
-</h1><ol>
+<h2 id="项目创建">项目创建
+</h2><ol>
 <li>
 <p>新建⼀个总工程⽂件夹，并在⽂件夹下⾯再新增⽂件夹Port、Cfg、Core、Prj，在Core⽂件夹中导⼊官⽹所给的⽂件。</p>
 </li>
@@ -477,9 +470,9 @@
 		data-flex-basis="336px"
 	
 ></p>
-<h1 id="报错解决">报错解决
-</h1><h3 id="错误类型1缺少件或找不到件">错误类型1：缺少⽂件或找不到⽂件
-</h3><p><strong>解决方式：创建对应文件，暂时“骗”过编译器</strong></p>
+<h2 id="报错解决">报错解决
+</h2><h4 id="错误类型1缺少件或找不到件">错误类型1：缺少⽂件或找不到⽂件
+</h4><p><strong>解决方式：创建对应文件，暂时“骗”过编译器</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -490,8 +483,8 @@
 </div>
 </div><p>这个报错信息提⽰我们缺少app_cfg.h⽂件，于是我们先建⽴⼀个空的app_cfg.h⽂件在Cfg⽂件夹中。</p>
 <p>同理添加os_cfg.h、os_cpu.h</p>
-<h3 id="错误类型2缺少相应的数据类型的定义和函数的声明">错误类型2：缺少相应的数据类型的定义和函数的声明。
-</h3><p><strong>解决方式：在os_cpu.h⽂件中添加相应的定义</strong></p>
+<h4 id="错误类型2缺少相应的数据类型的定义和函数的声明">错误类型2：缺少相应的数据类型的定义和函数的声明。
+</h4><p><strong>解决方式：在os_cpu.h⽂件中添加相应的定义</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -550,8 +543,8 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">typedef</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">OS_CPU_SR</span><span class="p">;</span><span class="c1">// 定义CPU状态寄存器的⼤⼩（PSR = 32位）
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="错误类型3os_cfgh中缺少相应功能定义">错误类型3：os_cfg.h中缺少相应功能定义。
-</h3><p><strong>解决方式：参考官方源码中cfg文件，在os_cfg.h⽂件中添加相应的宏定义</strong></p>
+</div><h4 id="错误类型3os_cfgh中缺少相应功能定义">错误类型3：os_cfg.h中缺少相应功能定义。
+</h4><p><strong>解决方式：参考官方源码中cfg文件，在os_cfg.h⽂件中添加相应的宏定义</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -819,8 +812,8 @@
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>OS_DEBUG这个功能在后续的操作中没什么⽤但是会产⽣报错，所以我们也将这个功能给关闭。</p>
-<h3 id="错误类型4链接时重复定义">错误类型4：链接时重复定义
-</h3><p><strong>解决方法：搜索重复定义的文件，调整include path</strong></p>
+<h4 id="错误类型4链接时重复定义">错误类型4：链接时重复定义
+</h4><p><strong>解决方法：搜索重复定义的文件，调整include path</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -832,8 +825,8 @@
 </div><p>上述报错说的是OSEventNameGet在两个文件ucos_ii.o and os_core.o中被重复定义；</p>
 <p>这两个.o文件都是编译器编译同名.c文件生成的对象（object）文件。</p>
 <p>这里一般的思路是借助CTRL+F搜索对应变量，定位重复部分，然后调整.h或者.c的“#include &lsquo;xxx&rsquo; &ldquo;部分。</p>
-<h4 id="为什么链接阶段报错而不是编译">为什么链接阶段报错而不是编译？
-</h4><p><strong>——简单理解为预处理粘贴include部分的代码块，编译不报错，但是链接时会发现”重复定义“</strong></p>
+<h5 id="为什么链接阶段报错而不是编译">为什么链接阶段报错而不是编译？
+</h5><p><strong>——简单理解为预处理粘贴include部分的代码块，编译不报错，但是链接时会发现”重复定义“</strong></p>
 <p>可以参考《深入理解计算机系统》这本书，或者<a class="link" href="https://zhuanlan.zhihu.com/p/476697014"  target="_blank" rel="noopener"
     >这篇博客</a>，<img src="/p/rtos%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E4%B8%80keil%E9%87%8D%E6%9E%84%CE%BCcos_ii/index.assets/image-20250307165645211.png"
 	width="831"
@@ -856,13 +849,13 @@
 <li>之后链接器会检查所有⽬标⽂件和库⽂件中的符号定义和引⽤；</li>
 <li>最终生成可执行程序。</li>
 </ol>
-<h4 id="具体解决">具体解决
-</h4><p>在重构项目中，ucos_ii.c文件”粘贴“了多个os_xxx.c文件中的内容，而项目中os_xxx.c也会被编译，最后在链接时发现重定义；</p>
+<p><strong>具体解决</strong></p>
+<p>在重构项目中，ucos_ii.c文件”粘贴“了多个os_xxx.c文件中的内容，而项目中os_xxx.c也会被编译，最后在链接时发现重定义；</p>
 <img src="../../../../../../../../administractor Cheng/Desktop/markdown/四轴II挑战点一ARMKeil重构UC_OSII项目.assets/image-20250307171502174.png" alt="image-20250307171502174" style="zoom:50%;" />
 <p>所以我们只需要右键core，点击魔术棒，关闭此部分的编译包含。</p>
 <img src="index.assets/image-20250307171905834.png" alt="image-20250307171905834" style="zoom:50%;" />
-<h3 id="错误类型5缺少启动件导致链接失败">错误类型5：缺少启动⽂件导致链接失败
-</h3><p><strong>解决方法：导入对应启动文件.s</strong></p>
+<h4 id="错误类型5缺少启动件导致链接失败">错误类型5：缺少启动⽂件导致链接失败
+</h4><p><strong>解决方法：导入对应启动文件.s</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -873,8 +866,8 @@
 </div>
 </div><p>缺少了启动文件，程序找不到执行入口以及中断向量表等，所以也会报错，后续我们还会对启动文件进行进一步分析；</p>
 <p>这里只需要新建一个Startup文件夹，导入startup_stm32f40_41xxx.s。</p>
-<h3 id="错误类型6os_cpu_c中hook函数">错误类型6：os_cpu_.c中hook函数
-</h3><p><strong>解决方法：暂时空定义函数，后续补充完善</strong></p>
+<h4 id="错误类型6os_cpu_c中hook函数">错误类型6：os_cpu_.c中hook函数
+</h4><p><strong>解决方法：暂时空定义函数，后续补充完善</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -883,8 +876,8 @@
 <pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">.</span><span class="err">\</span><span class="n">Objects</span><span class="err">\</span><span class="n">test</span><span class="p">.</span><span class="nl">axf</span><span class="p">:</span> <span class="nl">Error</span><span class="p">:</span> <span class="nl">L6218E</span><span class="p">:</span> <span class="n">Undefined</span> <span class="n">symbol</span> <span class="nf">OSCtxSw</span> <span class="p">(</span><span class="n">referred</span> <span class="n">from</span> <span class="n">os_core</span><span class="p">.</span><span class="n">o</span><span class="p">).</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h4 id="什么是hook函数">什么是Hook函数？
-</h4><p>钩子函数是uC/OS-II内核在特定操作（如任务创建、删除、切换等）前后调用的空函数（默认为空实现）。开发者通过重写这些函数，可以在不修改内核源码的情况下扩展功能。常见用途包括：</p>
+</div><h5 id="什么是hook函数">什么是Hook函数？
+</h5><p>钩子函数是uC/OS-II内核在特定操作（如任务创建、删除、切换等）前后调用的空函数（默认为空实现）。开发者通过重写这些函数，可以在不修改内核源码的情况下扩展功能。常见用途包括：</p>
 <ul>
 <li><strong>调试与监控</strong>：记录任务创建/删除时间、堆栈使用情况等。</li>
 <li><strong>资源管理</strong>：在任务创建时初始化自定义数据结构或外设。</li>
@@ -894,8 +887,8 @@
 <p>以<code>OSTaskCreateHook</code>为例，它在任务创建后被调用，允许开发者在任务首次运行前执行自定义逻辑。</p>
 <blockquote>
 <p>简单来讲就是获取操作系统的相关状态</p></blockquote>
-<h4 id="具体解决-1">具体解决
-</h4><p>我们需要新建⼀个os_cpu_c.c⽂件和⼀个os_cpu_a.s⽂件，在其中补充缺少的函数实现，⽬前我们不需要补全具体的函数实现细节，只需要写⼀个空定义来骗过编译器。</p>
+<p><strong>具体解决</strong></p>
+<p>我们需要新建⼀个os_cpu_c.c⽂件和⼀个os_cpu_a.s⽂件，在其中补充缺少的函数实现，⽬前我们不需要补全具体的函数实现细节，只需要写⼀个空定义来骗过编译器。</p>
 <p>在os_cpu_c.c⽂件中，我们定义空的系统初始化函数、钩⼦函数、cpu异常栈基地址和这是内核可⽤</p>
 <p>的优先级边界。</p>
 <div class="highlight"><div class="chroma">
@@ -946,11 +939,11 @@
 </div>
 </div><h4 id="错误类型7中断恢复与切换实现函数">错误类型7：中断、恢复与切换实现函数
 </h4><p><strong>解决方法：编写汇编函数确定相关逻辑</strong></p>
-<h4 id="为什么要使用汇编">为什么要使用汇编？
-</h4><p>在os_cpu_a.s⽂件中，实现的是与处理器相关的函数,这⼀部分的函数涉及CPU 特权寄存器的访问、寄存器状态的保存与恢复，以及任务上下⽂切换。</p>
+<h5 id="为什么要使用汇编">为什么要使用汇编？
+</h5><p>在os_cpu_a.s⽂件中，实现的是与处理器相关的函数,这⼀部分的函数涉及CPU 特权寄存器的访问、寄存器状态的保存与恢复，以及任务上下⽂切换。</p>
 <p>这些操作需要对CPU 体系结构和指令集进⾏精确控制，⽽⾼级语⾔（如 C）⽆法不提供直接读写特定硬件寄存器（如中断寄存器PRIMASK、堆栈PSP、任务控制块TCB）的机制，也难以确保任务切换的精确性和⾼效性。</p>
-<h4 id="具体解决-2">具体解决
-</h4><p>创建os_cpu_a.s文件，定义相关函数：</p>
+<p><strong>具体解决</strong></p>
+<p>创建os_cpu_a.s文件，定义相关函数：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -1033,8 +1026,8 @@
 </span></span><span class="line"><span class="cl"><span class="nf">END</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="错误类型8缺少main函数">错误类型8：缺少main函数
-</h3><p><strong>解决方法：添加主函数</strong></p>
+</div><h4 id="错误类型8缺少main函数">错误类型8：缺少main函数
+</h4><p><strong>解决方法：添加主函数</strong></p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -1064,8 +1057,8 @@
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h1 id="工程验证">工程验证
-</h1><h3 id="想法1调函数">想法1：调⽤函数
+</div><h2 id="工程验证">工程验证
+</h2><h3 id="想法1调函数">想法1：调⽤函数
 </h3><p>eg：OSTimeDly(1000 * 2);</p>
 <p>预期结果：编译通过且不报错，说明⼯程搭建成功。</p>
 <h3 id="想法2点亮灯">想法2：点亮⼩灯
@@ -1075,8 +1068,8 @@
 <p>这⾥我们需要注意的是我们需要注释掉我们⾃⼰在cpu_c.h中写的空的SystemInt（）函数，因为在</p>
 <p>f401已经含有初始化系统的函数。</p>
 <p>预期结果：编译通过且不报错，板载⼩灯L2闪烁，说明⼯程搭建成功。</p>
-<h1 id="项目总结">项目总结
-</h1><p>通过本项目，掌握了μC/OS-II内核重构的核心流程，解决了跨平台移植中的典型问题，为后续实现完整RTOS功能打下坚实基础。下一步将深入任务调度与硬件驱动集成，构建实时嵌入式应用。</p>
+<h2 id="项目总结">项目总结
+</h2><p>通过本项目，掌握了μC/OS-II内核重构的核心流程，解决了跨平台移植中的典型问题，为后续实现完整RTOS功能打下坚实基础。下一步将深入任务调度与硬件驱动集成，构建实时嵌入式应用。</p>
 
 </section>
 
