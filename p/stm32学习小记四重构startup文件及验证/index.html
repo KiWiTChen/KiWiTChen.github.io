@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="认识相关文件 前置工作 点击魔术棒 &ndash;&gt; 点击Listing &ndash;&gt; 将Linker Listing全部勾选（生成.map文件）\n点击魔术棒 &ndash;&gt; 点击Linker &ndash;&gt; 选取Scatter File路径 并 勾选Use Memory Layout from Target Dialog（生成.sct文件）\n">
+<title>Stm32学习小记（四）——重构Startup文件及验证</title>
+
+<link rel='canonical' href='https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E5%9B%9B%E9%87%8D%E6%9E%84startup%E6%96%87%E4%BB%B6%E5%8F%8A%E9%AA%8C%E8%AF%81/'>
+
+<link rel="stylesheet" href="/scss/style.min.663803bebe609202d5b39d848f2d7c2dc8b598a2d879efa079fa88893d29c49c.css"><meta property='og:title' content="Stm32学习小记（四）——重构Startup文件及验证">
+<meta property='og:description' content="认识相关文件 前置工作 点击魔术棒 &ndash;&gt; 点击Listing &ndash;&gt; 将Linker Listing全部勾选（生成.map文件）\n点击魔术棒 &ndash;&gt; 点击Linker &ndash;&gt; 选取Scatter File路径 并 勾选Use Memory Layout from Target Dialog（生成.sct文件）\n">
+<meta property='og:url' content='https://KiWiTChen.github.io/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E5%9B%9B%E9%87%8D%E6%9E%84startup%E6%96%87%E4%BB%B6%E5%8F%8A%E9%AA%8C%E8%AF%81/'>
+<meta property='og:site_name' content='KiWiT'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2025-04-01T00:38:54&#43;08:00'/><meta property='article:modified_time' content='2025-04-01T00:38:54&#43;08:00'/>
+<meta name="twitter:title" content="Stm32学习小记（四）——重构Startup文件及验证">
+<meta name="twitter:description" content="认识相关文件 前置工作 点击魔术棒 &ndash;&gt; 点击Listing &ndash;&gt; 将Linker Listing全部勾选（生成.map文件）\n点击魔术棒 &ndash;&gt; 点击Linker &ndash;&gt; 选取Scatter File路径 并 勾选Use Memory Layout from Target Dialog（生成.sct文件）\n">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hu_fc2b629155691b95.png" width="300"
+                            height="378" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🥰​</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">KiWiT</a></h1>
+            <h2 class="site-description">欢迎来到我的博客，在这里我会分享一些自己的学习日常，如果有相关问题，也欢迎私信讨论</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a 
+                        href='https://space.bilibili.com/492418934'
+                        target="_blank"
+                        title="Blibili"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.0.0-beta2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) --><path d="M488.6 104.1C505.3 122.2 513 143.8 511.9 169.8V372.2C511.5 398.6 502.7 420.3 485.4 437.3C468.2 454.3 446.3 463.2 419.9 464H92.02C65.57 463.2 43.81 454.2 26.74 436.8C9.682 419.4 .7667 396.5 0 368.2V169.8C.7667 143.8 9.682 122.2 26.74 104.1C43.81 87.75 65.57 78.77 92.02 78H121.4L96.05 52.19C90.3 46.46 87.42 39.19 87.42 30.4C87.42 21.6 90.3 14.34 96.05 8.603C101.8 2.868 109.1 0 117.9 0C126.7 0 134 2.868 139.8 8.603L213.1 78H301.1L375.6 8.603C381.7 2.868 389.2 0 398 0C406.8 0 414.1 2.868 419.9 8.603C425.6 14.34 428.5 21.6 428.5 30.4C428.5 39.19 425.6 46.46 419.9 52.19L394.6 78L423.9 78C450.3 78.77 471.9 87.75 488.6 104.1H488.6zM449.8 173.8C449.4 164.2 446.1 156.4 439.1 150.3C433.9 144.2 425.1 140.9 416.4 140.5H96.05C86.46 140.9 78.6 144.2 72.47 150.3C66.33 156.4 63.07 164.2 62.69 173.8V368.2C62.69 377.4 65.95 385.2 72.47 391.7C78.99 398.2 86.85 401.5 96.05 401.5H416.4C425.6 401.5 433.4 398.2 439.7 391.7C446 385.2 449.4 377.4 449.8 368.2L449.8 173.8zM185.5 216.5C191.8 222.8 195.2 230.6 195.6 239.7V273C195.2 282.2 191.9 289.9 185.8 296.2C179.6 302.5 171.8 305.7 162.2 305.7C152.6 305.7 144.7 302.5 138.6 296.2C132.5 289.9 129.2 282.2 128.8 273V239.7C129.2 230.6 132.6 222.8 138.9 216.5C145.2 210.2 152.1 206.9 162.2 206.5C171.4 206.9 179.2 210.2 185.5 216.5H185.5zM377 216.5C383.3 222.8 386.7 230.6 387.1 239.7V273C386.7 282.2 383.4 289.9 377.3 296.2C371.2 302.5 363.3 305.7 353.7 305.7C344.1 305.7 336.3 302.5 330.1 296.2C323.1 289.9 320.7 282.2 320.4 273V239.7C320.7 230.6 324.1 222.8 330.4 216.5C336.7 210.2 344.5 206.9 353.7 206.5C362.9 206.9 370.7 210.2 377 216.5H377z"/></svg>
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://github.com/KiWiTChen'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%8F%8B%E9%93%BE/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>友链</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ol>
+    <li><a href="#认识相关文件">认识相关文件</a>
+      <ol>
+        <li><a href="#前置工作">前置工作</a></li>
+        <li><a href="#map文件">.map文件</a>
+          <ol>
+            <li><a href="#节区的跨文件引用-section-cross-references">节区的跨文件引用 Section Cross References</a></li>
+            <li><a href="#移除未调用模块-removing-unused-input-sections-from-the-image">移除未调用模块 Removing Unused input sections from the image</a></li>
+            <li><a href="#映射符号表-image-symbol-table">映射符号表 Image Symbol Table：</a></li>
+            <li><a href="#内存映射分布memory-map-of-the-image">内存（映射）分布Memory Map of the image</a></li>
+            <li><a href="#存储组成大小image-component-sizes">存储组成大小Image component sizes</a></li>
+          </ol>
+        </li>
+        <li><a href="#sct文件">.sct文件</a>
+          <ol>
+            <li><a href="#文件解释">文件解释</a></li>
+            <li><a href="#验证作用">验证作用</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+    <li><a href="#重写start文件">重写start文件</a>
+      <ol>
+        <li>
+          <ol>
+            <li><a href="#1-栈空间分配">1. 栈空间分配</a></li>
+            <li><a href="#2-堆空间分配">2. 堆空间分配</a></li>
+            <li><a href="#3-中断向量表空间分配">3. 中断向量表空间分配</a></li>
+            <li><a href="#4reset_handler函数重写">4.Reset_Handler函数重写</a></li>
+            <li><a href="#5scratterload函数重写">5.ScratterLoad函数重写</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+    <li><a href="#验证">验证</a>
+      <ol>
+        <li><a href="#验证工具">验证工具</a></li>
+        <li><a href="#验证代码">验证代码</a>
+          <ol>
+            <li><a href="#a-rw-data-zi-data-const-data">a. RW-Data ZI-Data Const-Data</a></li>
+            <li><a href="#b-去除myscatterload后">b. 去除myScatterLoad后</a></li>
+            <li><a href="#c-将rw-data放到flash中">c. 将RW-Data放到Flash中</a></li>
+          </ol>
+        </li>
+      </ol>
+    </li>
+  </ol>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/stm32%E5%AD%A6%E4%B9%A0%E5%B0%8F%E8%AE%B0%E5%9B%9B%E9%87%8D%E6%9E%84startup%E6%96%87%E4%BB%B6%E5%8F%8A%E9%AA%8C%E8%AF%81/">Stm32学习小记（四）——重构Startup文件及验证</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Apr 01, 2025</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 7 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="认识相关文件">认识相关文件
+</h2><h3 id="前置工作">前置工作
+</h3><p>点击魔术棒 &ndash;&gt; 点击Listing &ndash;&gt; 将Linker Listing全部勾选（生成.map文件）</p>
+<img src="index.assets/image-20250331225136266.png" alt="image-20250331225136266" style="zoom: 80%;" />
+<p>点击魔术棒 &ndash;&gt; 点击Linker &ndash;&gt; 选取Scatter File路径 并 勾选Use Memory Layout from Target Dialog（生成.sct文件）</p>
+<p>（如果不能Edit，取消勾选Use，更改完再勾选回Use）</p>
+<img src="index.assets/image-20250331225254149.png" alt="image-20250331225254149" style="zoom:80%;" />
+<p>再点击User&ndash;&gt; 勾选Run #2</p>
+<h3 id="map文件">.map文件
+</h3><p>**位置：**位于Listings文件夹，命名为 项目名.map</p>
+<h4 id="节区的跨文件引用-section-cross-references">节区的跨文件引用 Section Cross References
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">stm32f4xx_usart.o(i.USART_DeInit) refers to
+</span></span><span class="line"><span class="cl">stm32f4xx_rcc.o(i.RCC_APB1PeriphResetCmd) for RCC_APB1PeriphResetCmd
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>翻译成中文就是stm32f4xx_usart模块（stm32f4xx_usart.o）中的USART_DeInit函数，</p>
+<p>*引用（调用）*了stm32f4xx_rcc模块（stm32f4xx_rcc.o）中的RCC_APB1PeriphResetCmd函数</p>
+<h4 id="移除未调用模块-removing-unused-input-sections-from-the-image">移除未调用模块 Removing Unused input sections from the image
+</h4><p>我们以下面这一行为例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Removing stm32f4xx_adc.o(i.ADC_CommonInit), (48 bytes).
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>移除了stm32f4xx_adc模块（stm32f4xx_adc.o）中的ADC_CommonInit函数（占用48字节）</p>
+<p>其中该部分最后一行还有所有未调用模块的统计</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">902 unused section(s) (total 43143 bytes) removed from the image.
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="映射符号表-image-symbol-table">映射符号表 Image Symbol Table：
+</h4><p>这部分分为两大类 <strong>Local Symbols</strong>（局部） 和 <strong>Global Symbols</strong>（全局）</p>
+<img src="index.assets/image-20250331232136191.png" alt="image-20250331232136191" style="zoom:80%;" />
+<p><strong>Symbol Name</strong>：符号名称</p>
+<p><strong>Value</strong>：存储对应的地址</p>
+<p><strong>Ov Type</strong>：符号对应的类型 （Number、Section、Thumb Code、Data等）</p>
+<p><strong>Size</strong>：存储大小</p>
+<p><strong>Object(Section)</strong>：段目标，即所在模块（源文件）</p>
+<h4 id="内存映射分布memory-map-of-the-image">内存（映射）分布Memory Map of the image
+</h4><img src="index.assets/image-20250331232404183.png" alt="image-20250331232404183" style="zoom:80%;" />
+<p><strong>Image Entry point</strong> ： 指映射入口地址，如果自己重构了start文件，会出现Not specified</p>
+<p>（不影响正常进入程序，但是会WARNING，可以在魔术棒的Linker下的Misc controls 处加入入口地址：&ndash;entry Reset_Handler）。</p>
+<p>没有重写的Image Entry point一般包含下面这些信息：</p>
+<p><strong>Execution Region</strong>：执行区域</p>
+<p><strong>Loading Region</strong>：加载区域</p>
+<p><strong>Base Addr</strong>：存储地址</p>
+<p><strong>Size</strong>：存储大小</p>
+<p><strong>Type</strong>：类型（有Data,Code,Zero,PAD等）</p>
+<p><strong>Attr</strong>：属性</p>
+<p><strong>Section Name</strong>：段名</p>
+<p><strong>Object</strong>：目标</p>
+<h4 id="存储组成大小image-component-sizes">存储组成大小Image component sizes
+</h4><p>主要展示RO、RW、ROM大小，多了debug状态下文件大小。</p>
+<img src="index.assets/image-20250331233101882.png" alt="image-20250331233101882" style="zoom:80%;" />
+<h3 id="sct文件">.sct文件
+</h3><p>.sct文件即为分散加载文件（Linux对应的是.ld文件）</p>
+<p>链接器根据该文件的配置分配各个节区地址，生成分散加载代码，因此我们通过修改该文件可以定制具体节区的存储位置。</p>
+<h4 id="文件解释">文件解释
+</h4><p>一般打开后长这样：</p>
+<img src="index.assets/image-20250331233332600.png" alt="image-20250331233332600" style="zoom:80%;" />
+<p>下面是对代码的解释：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">加载域名 起始地址 大小{；加载区域大小 （分号后面是注释）
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	运行域名 起始地址 大小 ；执行地址
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	{
+</span></span><span class="line"><span class="cl">		中断向量表起始地址， +First表示强制放到首地址
+</span></span><span class="line"><span class="cl">		ARM相关库，InRoot$$Sections即ARM库的链接器标号，主要作用COPY RW区到RAM，
+</span></span><span class="line"><span class="cl">		然后再RW区后面创建ZI区。 库函数__main函数中有这个段。 它是__main()的一部分。
+</span></span><span class="line"><span class="cl">		编译文件RO只读在该区域
+</span></span><span class="line"><span class="cl">		编译文件XO只执行在该区域
+</span></span><span class="line"><span class="cl">	}
+</span></span><span class="line"><span class="cl">	运行内存名字 起始地址 大小
+</span></span><span class="line"><span class="cl">	{
+</span></span><span class="line"><span class="cl">	编译可读可写，静态区
+</span></span><span class="line"><span class="cl">	}
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="验证作用">验证作用
+</h4><p>我们不妨试一下修改中断向量表的位置，</p>
+<p>首先关闭Use Memory Layout From Target Dialog，代表用我们自己的.sct来加载</p>
+<p>更改.sct文件，把RESET放入RAM中：</p>
+<img src="index.assets/image-20250331233931875.png" alt="image-20250331233931875" style="zoom:80%;" />
+<p>Rebuild后再打开.map文件</p>
+<img src="index.assets/image-20250331234022018.png" alt="image-20250331234022018" style="zoom:80%;" />
+<p>可以看到RESET已经被我们拷贝到了RAM中了。</p>
+<h2 id="重写start文件">重写start文件
+</h2><h4 id="1-栈空间分配">1. 栈空间分配
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Stack_Size EQU 0x00000400
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">AREA STACK, NOINIT, READWRITE, ALIGN=3
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Stack_Mem SPACE Stack_Size
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">__initial_sp
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="2-堆空间分配">2. 堆空间分配
+</h4><p>与栈空间分配不同的是Heap需要 <strong>__heap_base</strong> 与 <strong>__heap_limit</strong>两个参数进行限制，而栈只需要一个栈指针就可以了（当然都还需要大小)。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-asm" data-lang="asm"><span class="line"><span class="cl"><span class="nf">Heap_Size</span> <span class="no">EQU</span> <span class="mi">0x00000200</span>
+</span></span><span class="line"><span class="cl"><span class="nf">AREA</span> <span class="no">HEAP</span><span class="p">,</span> <span class="no">NOINIT</span><span class="p">,</span> <span class="no">READWRITE</span><span class="p">,</span> <span class="no">ALIGN</span><span class="err">=</span><span class="mi">3</span>
+</span></span><span class="line"><span class="cl"><span class="nf">__heap_base</span>
+</span></span><span class="line"><span class="cl"><span class="nf">Heap_Mem</span> <span class="no">SPACE</span> <span class="no">Heap_Size</span>
+</span></span><span class="line"><span class="cl"><span class="nf">__heap_limit</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="3-中断向量表空间分配">3. 中断向量表空间分配
+</h4><p>对于我们不需要的中断函数，我们都可以直接 <strong>DCD 0</strong>，因为我们当前重写与验证不需要中断，所以我们只需要 第一行__initial_sp 和 Reset_Handler</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">__Vectors DCD __initial_sp ; Top of Stack
+</span></span><span class="line"><span class="cl">DCD Reset_Handler ; Reset Handler
+</span></span><span class="line"><span class="cl">__Vectors_End
+</span></span><span class="line"><span class="cl">__Vectors_Size EQU __Vectors_End - __Vectors
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>具体要写入哪些向量，需要查看对应芯片手册：</p>
+<img src="index.assets/image-20250331234651938.png" alt="image-20250331234651938" style="zoom:80%;" />
+<p>在中断和事件中查看向量表（中文参考手册没有STM32F401RE）</p>
+<blockquote>
+<p>这里需要注意的是，我们在使用某个STM32产品的时候，不能够只看手册，还要对照官方的start文件的中断向量表中有没有</p>
+<p>对应的中断向量。如果没有，需要在startup中加上！</p></blockquote>
+<h4 id="4reset_handler函数重写">4.Reset_Handler函数重写
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Reset_Handler PROC
+</span></span><span class="line"><span class="cl">	EXPORT Reset_Handler [WEAK]
+</span></span><span class="line"><span class="cl">	IMPORT mymain
+</span></span><span class="line"><span class="cl">	IMPORT SystemInit
+</span></span><span class="line"><span class="cl">	IMPORT myScratterLoad
+</span></span><span class="line"><span class="cl">	LDR R0, =SystemInit
+</span></span><span class="line"><span class="cl">	BLX R0
+</span></span><span class="line"><span class="cl">	LDR R0, =myScratterLoad
+</span></span><span class="line"><span class="cl">	BLX R0
+</span></span><span class="line"><span class="cl">	BL mymain ;跳转去执行main函数
+</span></span><span class="line"><span class="cl">	B . ;原地跳转，即处于循环状态
+</span></span><span class="line"><span class="cl">	ENDP
+</span></span><span class="line"><span class="cl">	ALIGN ;填充字节使地址对齐
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Rest_Handler函数还是比较简单的，只需要调用SystemInit和myScratterLoad进行初始化之后就可以进入我们的main函数了</p>
+<h4 id="5scratterload函数重写">5.ScratterLoad函数重写
+</h4><p>在之前的讲解中，我们其实已经知道了该函数主要执行的是将数据拷贝到它该去的地方，</p>
+<p>在链接完之后，我们可以获得以下参数供我们去操作：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">IMPORT |Image$$RW_IRAM1$$Base| ;从别处导入data段的链接地址
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">IMPORT |Image$$RW_IRAM1$$Length| ;从别处导入data段的长度
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">IMPORT |Load$$RW_IRAM1$$Base| ;从别处导入data段的加载地址
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">IMPORT |Image$$RW_IRAM1$$ZI$$Base| ;从别处导入ZI段的链接地址
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">IMPORT |Image$$RW_IRAM1$$ZI$$Length|;从别处导入ZI段的长度
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><strong>复制数据段</strong>：</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">; 复制数据段
+</span></span><span class="line"><span class="cl">	LDR R0, = |Load$$RW_IRAM1$$Base| ;将data段的加载地址存入R0寄存器
+</span></span><span class="line"><span class="cl">	LDR R1, = |Image$$RW_IRAM1$$Base| ;将data段的链接地址存入R1寄存器
+</span></span><span class="line"><span class="cl">	LDR R2, = |Image$$RW_IRAM1$$Length| ;将data段的长度存入R2寄存器
+</span></span><span class="line"><span class="cl">CopyData
+</span></span><span class="line"><span class="cl">	SUB R2, R2, #4 ;每次复制4个字节的data段数据
+</span></span><span class="line"><span class="cl">	LDR R3, [R0, R2] ;把加载地址处的值取出到R3寄存器
+</span></span><span class="line"><span class="cl">	STR R3, [R1, R2] ;把取出的值从R3寄存器存入到链接地址
+</span></span><span class="line"><span class="cl">	CMP R2, #0 ;将计数和0相比较
+</span></span><span class="line"><span class="cl">	BNE CopyData ;如果不相等，跳转到CopyData标签处，相等则往下执行
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们只需要将加载地址的数据复制到链接地址即可,打开我们的.sct文件</p>
+<img src="index.assets/image-20250401002228147.png" alt="image-20250401002228147" style="zoom:80%;" />
+<p>框起来的就是对应的数据，据此可以推断出链接地址。比如因为链接文件规定了RESET在IROM的首地址，所以在.map中可以看到0x08000000加载了RESET。</p>
+<ul>
+<li><strong>清除BSS段：</strong></li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">; 清除BSS段
+</span></span><span class="line"><span class="cl">	LDR R0, = |Image$$RW_IRAM1$$ZI$$Base| ;将bss段的链接地址存入R1寄存器
+</span></span><span class="line"><span class="cl">	LDR R1, = |Image$$RW_IRAM1$$ZI$$Length| ;将bss段的长度存入R2寄存器
+</span></span><span class="line"><span class="cl">CleanBss
+</span></span><span class="line"><span class="cl">	SUB R1, R1, #4 ;每次清除4个字节的bss段数据
+</span></span><span class="line"><span class="cl">	MOV R3, #0 ;将0存入r3寄存器
+</span></span><span class="line"><span class="cl">	STR R3, [R0, R1] ;把R3寄存器存入到链接地址
+</span></span><span class="line"><span class="cl">	CMP R1, #0 ;将计数和0相比较
+</span></span><span class="line"><span class="cl">	BNE CleanBss ;如果不相等，跳转到CleanBss标签处，相等则往下执行
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>与上面类似，只是把0拷贝过去就可以了</p>
+<h2 id="验证">验证
+</h2><h3 id="验证工具">验证工具
+</h3><p>使用串口工具，用C语言操控寄存器实现串口通信（不要汇编！不要用库函数！）形如：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// 阻塞式发送单个字符
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">USART1_SendChar</span><span class="p">(</span><span class="kt">uint8_t</span> <span class="n">ch</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">USART1_SR</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">)));</span> <span class="c1">// 等待TXE标志置位
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">USART1_DR</span> <span class="o">=</span> <span class="p">(</span><span class="n">ch</span> <span class="o">&amp;</span> <span class="mh">0xFF</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>点击魔术棒 &ndash;&gt; Debug &ndash;&gt; Settings &ndash;&gt; Flash Download &ndash;&gt; Erase Full Chip（全片清除)</p>
+<h3 id="验证代码">验证代码
+</h3><h4 id="a-rw-data-zi-data-const-data">a. RW-Data ZI-Data Const-Data
+</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;usart.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">RWData</span> <span class="o">=</span> <span class="mi">1234</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">ZIData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">const</span> <span class="kt">int</span> <span class="n">ConstData</span> <span class="o">=</span> <span class="mi">4321</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">mymain</span><span class="p">(</span><span class="kt">void</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_Init</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="kt">uint32_t</span> <span class="n">p</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendStr</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">RW-Data value: &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendNumber</span><span class="p">(</span><span class="n">RWData</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendStr</span><span class="p">(</span><span class="s">&#34; addr:&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="o">&amp;</span><span class="n">RWData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendNumber</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">16</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendStr</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">ZI-Data value: &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendNumber</span><span class="p">(</span><span class="n">ZIData</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendStr</span><span class="p">(</span><span class="s">&#34; addr:&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="o">&amp;</span><span class="n">ZIData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendNumber</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">16</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendStr</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">Const-Data value:&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendNumber</span><span class="p">(</span><span class="n">ConstData</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendStr</span><span class="p">(</span><span class="s">&#34; addr:&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="o">&amp;</span><span class="n">ConstData</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nf">USART1_SendNumber</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">16</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">while</span><span class="p">(</span><span class="mi">1</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>得到结果：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RW-Data value: 1234 addr:20000000
+</span></span><span class="line"><span class="cl">ZI-Data value: 0 addr:20000004
+</span></span><span class="line"><span class="cl">Const-Data value:4321 addr:800028C
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以看到RW-Data在0x20000000，在RAM中,但是ZI-Data却不是在ZI-Data区域，其实是我们的编译器已经将其进行了初始化，所以还是算到了ZI-Data里面；其中，Const-Data则在Flash中。</p>
+<h4 id="b-去除myscatterload后">b. 去除myScatterLoad后
+</h4><p>我们来去除myScatterLoad函数，还是使用原来的函数，查看结果为：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RW-Data value: 3758811134 addr:20000000
+</span></span><span class="line"><span class="cl">ZI-Data value: 103643149 addr:20000004
+</span></span><span class="line"><span class="cl">Const-Data value:4321 addr:8000284
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以看到因为我们没有将RW-Data和ZI-Data拷贝到RAM中，所以打印出来的value是乱码；而Const-Data因为在Flash中，则是我们指定的值。</p>
+<h4 id="c-将rw-data放到flash中">c. 将RW-Data放到Flash中
+</h4><p>更改.sct文件，将RW数据放入IROM中：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">LR_IROM1</span> <span class="mh">0x08000000</span> <span class="mh">0x00080000</span> <span class="p">{</span> <span class="p">;</span> <span class="nb">load</span> <span class="n">region</span> <span class="n">size_region</span> <span class="n">jia</span>
+</span></span><span class="line"><span class="cl"><span class="n">ER_IROM1</span> <span class="mh">0x08000000</span> <span class="mh">0x00080000</span> <span class="p">{</span> <span class="p">;</span> <span class="nb">load</span> <span class="n">address</span> <span class="o">=</span> <span class="n">execution</span> <span class="n">address</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*.</span><span class="n">o</span> <span class="p">(</span><span class="n">RESET</span><span class="p">,</span> <span class="o">+</span><span class="n">First</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*</span><span class="p">(</span><span class="n">InRoot</span><span class="o">$$</span><span class="n">Sections</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="o">.</span><span class="n">ANY</span> <span class="p">(</span><span class="o">+</span><span class="n">RO</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="o">.</span><span class="n">ANY</span> <span class="p">(</span><span class="o">+</span><span class="n">XO</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="o">.</span><span class="n">ANY</span> <span class="p">(</span><span class="o">+</span><span class="n">RW</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="n">RW_IRAM1</span> <span class="mh">0x20000000</span> <span class="mh">0x00018000</span> <span class="p">{</span> <span class="p">;</span> <span class="n">RW</span> <span class="n">data</span>
+</span></span><span class="line"><span class="cl">	<span class="o">.</span><span class="n">ANY</span> <span class="p">(</span><span class="o">+</span><span class="n">ZI</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们将RW数据放到Flash中（不可以将ZI数据放入到Flash中），因为ZI数据还有Stack和Heap段，如果这两个数据段在Flash中，就不可以正常执行了。</p>
+<p>查看结果为：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">RW-Data value: 1234 addr:8000288
+</span></span><span class="line"><span class="cl">ZI-Data value: 0 addr:800028C
+</span></span><span class="line"><span class="cl">Const-Data value:4321 addr:8000284
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以看到我们的数据已经可以正常打印了，而且地址都在Flash中（这个时候需要更改如果）。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2024 - 
+        
+        2025 KiWiT
+    </section>
+    
+    <section class="powerby">
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.27.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
